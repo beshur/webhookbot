@@ -5,12 +5,14 @@ const
   express = require('express'),
   bodyParser = require('body-parser'),
   config = require('./config.json'),
-  clientWebhooks = require('./src/ClientWebhooks'),
+  ClientWebhooks = require('./src/ClientWebhooks'),
   request = require('request'),
   uuidv4 = require('uuid/v4'),
   app = express().use(bodyParser.json()); // creates express http server
 
 const PORT = process.env.PORT || 1337;
+
+const clientWebhooksInstance = new ClientWebhooks(config);
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
@@ -22,16 +24,22 @@ function handleMessage(sender_psid, received_message) {
     switch(received_message.text) {
       case '/start':
         let newId = uuidv4();
-        let clientHookUrl = `${config.APP_HOST}hook/${newId}`;
+        let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
         response = {
           "text": `Send your POST requests here: ${clientHookUrl}` 
         }
         
-        clientWebhooks.push(newId, sender_psid);
+        clientWebhooksInstance.push(newId, sender_psid);
         break;
+      case '/help':
+        response = {
+          "text": `Send /start to create new webhook URL.` 
+        }
+        break;
+
       default:
         response = {
-          "text": `You sent the message: "${received_message.text}". Now send me an image!`
+          "text": `You sent the message: "${received_message.text}".`
         }
         break;
     }
@@ -39,7 +47,10 @@ function handleMessage(sender_psid, received_message) {
   }  
   console.log('handleMessage response', response);
   // Sends the response message
-  callSendAPI(sender_psid, response);    
+  callSendAPI(sender_psid, response, {
+    onSuccess: () => {},
+    onError: () => {}
+  });    
 }
 
 // Handles messaging_postbacks events
@@ -48,7 +59,7 @@ function handlePostback(sender_psid, received_postback) {
 }
 
 // Sends response messages via the Send API
-function callSendAPI(sender_psid, response) {
+function callSendAPI(sender_psid, response, callback) {
   // Construct the message body
   let request_body = {
     "recipient": {
@@ -66,8 +77,10 @@ function callSendAPI(sender_psid, response) {
   }, (err, res, body) => {
     if (!err) {
       console.log('message sent!')
+      callback.onSuccess(true);
     } else {
       console.error("Unable to send message:" + err);
+      callback.onError(err);
     }
   }); 
 }
@@ -117,22 +130,26 @@ app.post('/webhook', (req, res) => {
 
 });
 
-// Creates the endpoint for our webhook 
-app.post('/hook/:id', (req, res) => {  
+// Creates the endpoint for client webhook 
+app.post('/webhook/:id', (req, res) => {  
  
   let body = req.body;
   let hookId = req.params.id;
-  let clientId = clientWebhooks.getWebhook(hookId);
+  let clientId = clientWebhooksInstance.getWebhook(hookId);
   if (!hookId || !clientId) {
     res.status(400).send('BAD_WEBHOOK_ID');
   }
 
-  console.log("/hook/", body, hookId, clientId);
+  console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
 
-  callSendAPI(clientId, body);
-
-  res.status(200).send('OK');
-
+  callSendAPI(clientId, body, {
+    onSuccess: (success) => {
+      res.status(200).send('OK');
+    },
+    onError: (error) => {
+      res.status(500).send('ERROR');
+    }
+  });
 });
 
 // Adds support for GET requests to our webhook
