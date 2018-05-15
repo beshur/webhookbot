@@ -5,25 +5,39 @@ const
   express = require('express'),
   bodyParser = require('body-parser'),
   config = require('./config.json'),
+  clientWebhooks = require('./src/ClientWebhooks'),
   request = require('request'),
+  uuidv4 = require('uuid/v4'),
   app = express().use(bodyParser.json()); // creates express http server
 
 const PORT = process.env.PORT || 1337;
 
-
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
-  let response;
+  var response;
 
   // Check if the message contains text
   if (received_message.text) {    
 
-    // Create the payload for a basic text message
-    response = {
-      "text": `You sent the message: "${received_message.text}". Now send me an image!`
+    switch(received_message.text) {
+      case '/start':
+        let newId = uuidv4();
+        let clientHookUrl = `${config.APP_HOST}hook/${newId}`;
+        response = {
+          "text": `Send your POST requests here: ${clientHookUrl}` 
+        }
+        
+        clientWebhooks.push(newId, sender_psid);
+        break;
+      default:
+        response = {
+          "text": `You sent the message: "${received_message.text}". Now send me an image!`
+        }
+        break;
     }
+    // Create the payload for a basic text message
   }  
-  
+  console.log('handleMessage response', response);
   // Sends the response message
   callSendAPI(sender_psid, response);    
 }
@@ -58,6 +72,13 @@ function callSendAPI(sender_psid, response) {
   }); 
 }
 
+app.get('/', (req, res) => {
+  res.send('OK');
+});
+
+app.get('/health-check', (req, res) => {
+  res.send('OK ' + process.uptime());
+});
 
 // Creates the endpoint for our webhook 
 app.post('/webhook', (req, res) => {  
@@ -73,7 +94,7 @@ app.post('/webhook', (req, res) => {
       // Gets the message. entry.messaging is an array, but 
       // will only ever contain one message, so we get index 0
       let webhook_event = entry.messaging[0];
-      console.log(webhook_event);
+      console.log("webhook event", webhook_event);
 
       // Get the sender PSID
       let sender_psid = webhook_event.sender.id;
@@ -93,6 +114,26 @@ app.post('/webhook', (req, res) => {
     // Returns a '404 Not Found' if event is not from a page subscription
     res.sendStatus(404);
   }
+
+});
+
+// Creates the endpoint for our webhook 
+app.post('/hook/:id', (req, res) => {  
+ 
+  let body = req.body;
+  let hookId = req.params.id;
+  let clientId = clientWebhooks.getWebhook(hookId);
+  if (!hookId || !clientId) {
+    res.status(400).send('BAD_WEBHOOK_ID');
+  }
+
+  console.log("/hook/", body, hookId, clientId);
+
+  callSendAPI(clientId, {
+    text: body
+  });
+
+  res.status(200).send('OK');
 
 });
 
