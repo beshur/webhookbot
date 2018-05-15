@@ -85,6 +85,17 @@ function callSendAPI(sender_psid, response, callback) {
   }); 
 }
 
+function formatProcessedWebhookMessage(body) {
+  let text = '';
+  if (body.title) {
+    text = `*${body.title}*\n`;
+  }
+  if (body.text) {
+    text += body.text;
+  }
+  return {text};
+}
+
 app.get('/', (req, res) => {
   res.send('OK');
 });
@@ -142,7 +153,7 @@ app.post('/webhook/:id', (req, res) => {
 
   console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
 
-  callSendAPI(clientId, body, {
+  callSendAPI(clientId, formatProcessedWebhookMessage(body), {
     onSuccess: (success) => {
       res.status(200).send('OK');
     },
