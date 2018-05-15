@@ -129,9 +129,7 @@ app.post('/hook/:id', (req, res) => {
 
   console.log("/hook/", body, hookId, clientId);
 
-  callSendAPI(clientId, {
-    text: body
-  });
+  callSendAPI(clientId, body);
 
   res.status(200).send('OK');
 
