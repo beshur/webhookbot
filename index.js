@@ -6,6 +6,7 @@ const
   bodyParser = require('body-parser'),
   config = require('./config.json'),
   ClientWebhooks = require('./src/ClientWebhooks'),
+  Firebase = require('./src/Firebase'),
   request = require('request'),
   uuidv4 = require('uuid/v4'),
   app = express().use(bodyParser.json()); // creates express http server
@@ -13,23 +14,44 @@ const
 const PORT = process.env.PORT || 1337;
 
 const clientWebhooksInstance = new ClientWebhooks(config);
+const firebaseInstance = new Firebase(config.FIREBASE);
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
   var response;
+  var async = false;
 
   // Check if the message contains text
   if (received_message.text) {    
 
     switch(received_message.text) {
       case '/start':
-        let newId = uuidv4();
-        let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
-        response = {
-          "text": `Send your POST requests here: ${clientHookUrl}` 
-        }
-        
-        clientWebhooksInstance.push(newId, sender_psid);
+        async = true;
+        // let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
+        firebaseInstance.createWebhook(sender_psid).then((success) => {
+          let clientHookUrl = `${config.APP_HOST}webhook/${success.key}`;
+          response = {
+            "text": `Send your POST requests here: ${clientHookUrl}` 
+          }
+
+          callSendAPI(sender_psid, response, {
+            onSuccess: () => {},
+            onError: () => {}
+          });
+
+        }).catch((err) => {
+          response = {
+            'text': 'Something went wrong. Please try again later.'
+          }
+          // notify user of error
+          callSendAPI(sender_psid, response, {
+            onSuccess: () => {},
+            onError: () => {}
+          });
+
+          console.error('createWebhook', err);
+        });
+
         break;
       case '/help':
         response = {
@@ -47,6 +69,9 @@ function handleMessage(sender_psid, received_message) {
   }  
   console.log('handleMessage response', response);
   // Sends the response message
+  if (async) {
+    return;
+  }
   callSendAPI(sender_psid, response, {
     onSuccess: () => {},
     onError: () => {}
@@ -68,6 +93,7 @@ function callSendAPI(sender_psid, response, callback) {
     "message": response
   }
 
+  console.log('callSendAPI', response);
   // Send the HTTP request to the Messenger Platform
   request({
     "uri": "https://graph.facebook.com/v2.6/me/messages",
@@ -146,21 +172,28 @@ app.post('/webhook/:id', (req, res) => {
  
   let body = req.body;
   let hookId = req.params.id;
-  let clientId = clientWebhooksInstance.getWebhook(hookId);
-  if (!hookId || !clientId) {
+  // let clientId = clientWebhooksInstance.getWebhook(hookId);
+  if (!hookId) {
     res.status(400).send('BAD_WEBHOOK_ID');
   }
 
-  console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
+  firebaseInstance.webhookHit(hookId).then((success) => {
+    console.log('/webhook/ get', success, hookId);
+    // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
 
-  callSendAPI(clientId, formatProcessedWebhookMessage(body), {
-    onSuccess: (success) => {
-      res.status(200).send('OK');
-    },
-    onError: (error) => {
-      res.status(500).send('ERROR');
-    }
-  });
+    callSendAPI(success.userId, formatProcessedWebhookMessage(body), {
+      onSuccess: (success) => {
+        res.status(200).send('OK');
+      },
+      onError: (error) => {
+        res.status(500).send('ERROR');
+      }
+    });
+    
+  }).catch(err => {
+    console.error('/webhook/:id error getting webhook', hookId );
+  })
+
 });
 
 // Adds support for GET requests to our webhook
