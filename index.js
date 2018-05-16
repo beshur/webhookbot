@@ -22,6 +22,7 @@ function handleMessage(sender_psid, received_message) {
   var response;
   var async = false;
 
+  console.log('handleMessage is postback', typeof received_message.payload !== 'undefined');
   // Check if the message contains text
   if (received_message.text) {    
 
@@ -173,6 +174,46 @@ function createWebhookUrl(hookId) {
   return `${config.APP_HOST}webhook/${hookId}`;
 }
 
+function setupMessengerProfile() {
+  let settingsBody = {
+    "get_started":{
+      "payload":"/help"
+    },
+    "persistent_menu":[{
+      "locale":"default",
+      "composer_input_disabled": true,
+      "call_to_actions":[{
+        "title":"Get started",
+        "type":"postback",
+        "payload":"/help"
+      },
+      {
+        "title":"Create Webhook",
+        "type":"postback",
+        "payload":"/start"
+      },
+      {
+        "type":"postback",
+        "title":"My Webhooks",
+        "payload":"/list"
+      }]
+    }]
+  }
+  request({
+    "uri": "https://graph.facebook.com/v2.6/me/messenger_profile",
+    "qs": { "access_token": config.FB_PAGE_ACCESS_TOKEN },
+    "method": "POST",
+    "json": settingsBody
+  }, (err, res, body) => {
+    if (!err) {
+      console.log('setupMessengerProfile OK!')
+    } else {
+      console.error("setupMessengerProfile error:" + err);
+    }
+  }); 
+
+}
+
 app.get('/', (req, res) => {
   res.send('OK');
 });
@@ -232,7 +273,15 @@ app.post('/webhook', (req, res) => {
       if (webhook_event.message) {
         handleMessage(sender_psid, webhook_event.message);        
       } else if (webhook_event.postback) {
-        handlePostback(sender_psid, webhook_event.postback);
+        /*
+          "postback":{
+            "title": "<TITLE_FOR_THE_CTA>",  
+            "payload": "<USER_DEFINED_PAYLOAD>",
+        */
+        let payload = webhook_event.postback.payload;
+        handleMessage(sender_psid, _.extend(webhook_event.postback, {
+          text: payload
+        }));
       }
 
     });
@@ -276,6 +325,8 @@ app.post('/webhook/:id', (req, res) => {
     });
   });
 });
+
+setupMessengerProfile();
 
 // Sets server port and logs message on success
 app.listen(PORT, () => console.log('webhook is listening on', PORT));
