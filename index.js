@@ -33,7 +33,9 @@ function handleMessage(sender_psid, received_message) {
         firebaseInstance.createWebhook(sender_psid).then((success) => {
           let clientHookUrl = createWebhookUrl(success.key);
           response = {
-            "text": `Send your POST requests here: ${clientHookUrl}` 
+            "text": `Send your requests here:\n${clientHookUrl}
+              \n\nSend POST <Content-Type: application/json> with the data structured like this:
+              \n{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}` 
           }
 
           callSendAPI(sender_psid, response, {
@@ -124,7 +126,7 @@ function callSendAPI(sender_psid, response, callback) {
     "message": response
   }
 
-  console.log('callSendAPI', response);
+  console.log('callSendAPI');
   // Send the HTTP request to the Messenger Platform
   request({
     "uri": "https://graph.facebook.com/v2.6/me/messages",
