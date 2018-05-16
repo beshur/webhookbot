@@ -15,7 +15,6 @@ const
 const PORT = process.env.PORT || 1337;
 
 const firebaseInstance = new Firebase(config.FIREBASE);
-const clientWebhooksInstance = new ClientWebhooks(config, firebaseInstance);
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
@@ -309,7 +308,6 @@ app.post('/webhook/:id', (req, res) => {
  
   let body = req.body;
   let hookId = req.params.id;
-  // let clientId = clientWebhooksInstance.getWebhook(hookId);
   if (!hookId) {
     res.status(400).send({error: 'BAD_WEBHOOK_ID'});
   }
