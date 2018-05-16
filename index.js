@@ -184,8 +184,6 @@ function setupMessengerProfile() {
       'locale':'default',
       'text':`Hi!
       \nWebhook Bot can create the webhook URL that you can use to forward messages to yourself.
-      \nType /start to create a webhook URL.
-      \nType /list to list your URLs.
       \nType /help to display the commands.`
     }],
     'persistent_menu':[{
