@@ -1,8 +1,9 @@
 'use strict';
 const fs = require('fs');
 
-function ClientWebhooks(config) {
+function ClientWebhooks(config, firebase) {
   this.webhooksMap = {};
+  this.firebase = firebase;
   this.LOG = 'ClientWebhooks';
 
   this.loadLocal = function() {
