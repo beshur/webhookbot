@@ -79,7 +79,14 @@ let firebaseApp = function(firebaseConfig) {
   }
 
   this.listWebhooks = function(userId) {
-    // this.webhooksRef.database().ref() 
+    console.log(this.LOG, 'listWebhooks for ', userId, typeof userId);
+    return new Promise((resolve, reject) => {
+      this.webhooksRef.orderByChild('userId').equalTo(userId).once('value', success => {
+        let list = success.val();
+        console.log(this.LOG, 'listWebhooks for ', userId, list);
+        resolve(list)
+      });
+    });
   }
 
   this.init();

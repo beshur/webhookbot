@@ -9,6 +9,7 @@ const
   Firebase = require('./src/Firebase'),
   request = require('request'),
   uuidv4 = require('uuid/v4'),
+  _ = require('underscore'),
   app = express().use(bodyParser.json()); // creates express http server
 
 const PORT = process.env.PORT || 1337;
@@ -29,7 +30,7 @@ function handleMessage(sender_psid, received_message) {
         async = true;
         // let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
         firebaseInstance.createWebhook(sender_psid).then((success) => {
-          let clientHookUrl = `${config.APP_HOST}webhook/${success.key}`;
+          let clientHookUrl = createWebhookUrl(success.key);
           response = {
             "text": `Send your POST requests here: ${clientHookUrl}` 
           }
@@ -50,6 +51,34 @@ function handleMessage(sender_psid, received_message) {
           });
 
           console.error('createWebhook', err);
+        });
+
+        break;
+      case '/list':
+        async = true;
+        // let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
+        firebaseInstance.listWebhooks(sender_psid).then((list) => {
+          let hooksList = prettyHooksList(list);
+          response = {
+            "text": `Your webhooks:\n${hooksList}` 
+          }
+
+          callSendAPI(sender_psid, response, {
+            onSuccess: () => {},
+            onError: () => {}
+          });
+
+        }).catch((err) => {
+          response = {
+            'text': 'Something went wrong. Please try again later.'
+          }
+          // notify user of error
+          callSendAPI(sender_psid, response, {
+            onSuccess: () => {},
+            onError: () => {}
+          });
+
+          console.error('listWebhooks', err);
         });
 
         break;
@@ -120,6 +149,26 @@ function formatProcessedWebhookMessage(body) {
     text += body.text;
   }
   return {text};
+}
+
+function prettyHooksList(list) {
+  let result = '';
+  let resultList = [];
+  if (list) {
+    _.forEach(list, (item, key) => {
+      console.log(key, item);
+      let createdOn = ` Created on ${new Date(item.createdOn).toString()}`;
+      resultList.push(createWebhookUrl(key) + createdOn);
+    });
+
+    result = resultList.join('\n');
+  }
+
+  return result;
+}
+
+function createWebhookUrl(hookId) {
+  return `${config.APP_HOST}webhook/${hookId}`;
 }
 
 app.get('/', (req, res) => {
