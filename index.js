@@ -23,7 +23,7 @@ function handleMessage(sender_psid, received_message) {
 
   console.log('handleMessage is postback', typeof received_message.payload !== 'undefined');
   // Check if the message contains text
-  if (received_message.text) {    
+  if (received_message.text) {
 
     switch(received_message.text) {
       case '/start':
@@ -112,7 +112,11 @@ function handleMessage(sender_psid, received_message) {
 
 // Handles messaging_postbacks events
 function handlePostback(sender_psid, received_postback) {
-
+  console.log('handlePostback');
+  let payload = received_postback.payload;
+  handleMessage(sender_psid, _.extend(received_postback, {
+    text: payload
+  }));
 }
 
 // Sends response messages via the Send API
@@ -281,15 +285,7 @@ app.post('/webhook', (req, res) => {
       if (webhook_event.message) {
         handleMessage(sender_psid, webhook_event.message);        
       } else if (webhook_event.postback) {
-        /*
-          "postback":{
-            "title": "<TITLE_FOR_THE_CTA>",  
-            "payload": "<USER_DEFINED_PAYLOAD>",
-        */
-        let payload = webhook_event.postback.payload;
-        handleMessage(sender_psid, _.extend(webhook_event.postback, {
-          text: payload
-        }));
+        handlePostback(sender_psid, webhook.postback);
       }
 
     });
