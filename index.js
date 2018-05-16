@@ -177,34 +177,42 @@ function createWebhookUrl(hookId) {
 
 function setupMessengerProfile() {
   let settingsBody = {
-    "get_started":{
-      "payload":"/help"
+    'get_started':{
+      'payload':'/help'
     },
-    "persistent_menu":[{
-      "locale":"default",
-      "composer_input_disabled": true,
-      "call_to_actions":[{
-        "title":"Get started",
-        "type":"postback",
-        "payload":"/help"
+    'greeting': [{
+      'locale':'default',
+      'text':`Hi!
+      \nWebhook Bot can create the webhook URL that you can use to forward messages to yourself.
+      \nType /start to create a webhook URL.
+      \nType /list to list your URLs.
+      \nType /help to display the commands.`
+    }],
+    'persistent_menu':[{
+      'locale':'default',
+      'composer_input_disabled': false,
+      'call_to_actions':[{
+        'title':'Get started',
+        'type':'postback',
+        'payload':'/help'
       },
       {
-        "title":"Create Webhook",
-        "type":"postback",
-        "payload":"/start"
+        'title':'Create Webhook',
+        'type':'postback',
+        'payload':'/start'
       },
       {
-        "type":"postback",
-        "title":"My Webhooks",
-        "payload":"/list"
+        'type':'postback',
+        'title':'My Webhooks',
+        'payload':'/list'
       }]
     }]
   }
   request({
-    "uri": "https://graph.facebook.com/v2.6/me/messenger_profile",
-    "qs": { "access_token": config.FB_PAGE_ACCESS_TOKEN },
-    "method": "POST",
-    "json": settingsBody
+    'uri': 'https://graph.facebook.com/v2.6/me/messenger_profile',
+    'qs': { 'access_token': config.FB_PAGE_ACCESS_TOKEN },
+    'method': 'POST',
+    'json': settingsBody
   }, (err, res, body) => {
     if (!err) {
       console.log('setupMessengerProfile OK!')
