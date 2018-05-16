@@ -22,15 +22,10 @@ let firebaseApp = function(firebaseConfig) {
 
     console.log(this.LOG, 'ready steady');
     this.subscribe();
-    // this.createWebhook().then((snapshot) => {
-    //   console.log(this.LOG, 'created webhook', snapshot.key);
-    // }).catch((err) => {
-    //   console.error(this.LOG, 'on creating webhook', err);
-    // });
   }
   this.subscribe = () => {
     this.webhooksRef = this.database.ref(webhooksRef);
-    this.webhooksRef.on('value', this.handleData);
+    // this.webhooksRef.on('value', this.handleData);
   }
 
   this.handleData = (snapshot) => {
@@ -56,17 +51,30 @@ let firebaseApp = function(firebaseConfig) {
 
   this.webhookHit = (webhookId) => {
     let updates = {};
-    updates[webhooksRef + webhookId] = {
-      lastHitOn: Date.now()
-    }
-    return this.database.ref().update(updates);
+    return new Promise((resolve, reject) => {
+
+      this.getWebhook(webhookId).then(webhookObj => {
+        if (webhookObj === null) {
+          return reject('WEBHOOK:NULL');
+        }
+
+        updates[webhooksRef + webhookId] = _.extend(webhookSchema, webhookObj, {
+          lastHitOn: Date.now()
+        });
+
+        return this.database.ref().update(updates)
+          .then(success => resolve(updates))
+          .catch(reject);
+      }).catch(err => {
+        console.err(this.LOG, 'webhookHit -> getWebhook err', err);
+        reject(err);
+      });
+    });
   }
 
   this.getWebhook = (webhookId) => {
     return new Promise((resolve, reject) => {
-      this.database.ref(webhooksRef + webhookId).once('value', snapshot => {
-        resolve(snapshot.val());
-      });
+      this.database.ref(webhooksRef + webhookId).once('value', snapshot => resolve(snapshot.val()));
     });
   }
 

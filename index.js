@@ -202,11 +202,11 @@ app.post('/webhook/:id', (req, res) => {
   let hookId = req.params.id;
   // let clientId = clientWebhooksInstance.getWebhook(hookId);
   if (!hookId) {
-    res.status(400).send('BAD_WEBHOOK_ID');
+    res.status(400).send({error: 'BAD_WEBHOOK_ID'});
   }
 
   firebaseInstance.webhookHit(hookId).then((success) => {
-    console.log('/webhook/ get', success, hookId);
+    console.log('/webhook/ hit', success, hookId);
     // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
 
     callSendAPI(success.userId, formatProcessedWebhookMessage(body), {
@@ -217,11 +217,13 @@ app.post('/webhook/:id', (req, res) => {
         res.status(500).send('ERROR');
       }
     });
-    
+      
   }).catch(err => {
-    console.error('/webhook/:id error getting webhook', hookId );
-  })
-
+    console.error('/webhook/:id error getting webhook', hookId, err );
+    res.status(400).send({
+      error: err
+    });
+  });
 });
 
 // Sets server port and logs message on success
