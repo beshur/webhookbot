@@ -155,16 +155,18 @@ function prettyHooksList(list) {
   let result = '';
   let resultList = [];
   if (list) {
-    _.forEach(list, (item, key) => {
-      console.log(key, item);
-      let createdOn = ` Created on ${new Date(item.createdOn).toString()}`;
-      resultList.push(createWebhookUrl(key) + createdOn);
-    });
-
+    resultList = _.map(list, prettyHookItem);
     result = resultList.join('\n');
   }
 
   return result;
+}
+
+function prettyHookItem(item, key) {
+  let result = '* ';
+  let createdOn = ` Created on ${new Date(item.createdOn).toString()}`;
+  let url = createWebhookUrl(key);
+  return result + url + createdOn;
 }
 
 function createWebhookUrl(hookId) {
