@@ -66,7 +66,7 @@ let firebaseApp = function(firebaseConfig, analyticsInstance) {
 
         return this.database.ref().update(updates)
           .then(success => {
-            resolve(updates);
+            resolve(webhookObj);
             this.analytics.trackWebhookHit(webhookObj.userId).catch();
           })
           .catch(reject);

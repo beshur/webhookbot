@@ -317,7 +317,7 @@ app.post('/webhook/:id', (req, res) => {
     console.log('/webhook/ hit', success, hookId);
     // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
 
-    callSendAPI(success[hookId]['userId'], formatProcessedWebhookMessage(body), {
+    callSendAPI(success.userId, formatProcessedWebhookMessage(body), {
       onSuccess: (success) => {
         res.status(200).send('OK');
       },
