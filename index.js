@@ -122,7 +122,7 @@ function handlePostback(sender_psid, received_postback) {
 
 // Sends response messages via the Send API
 function callSendAPI(sender_psid, response, callback) {
-  // Construct the message body
+  // Construct the message body)
   let request_body = {
     "recipient": {
       "id": sender_psid
@@ -317,7 +317,7 @@ app.post('/webhook/:id', (req, res) => {
     console.log('/webhook/ hit', success, hookId);
     // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
 
-    callSendAPI(success.userId, formatProcessedWebhookMessage(body), {
+    callSendAPI(success[hookId]['userId'], formatProcessedWebhookMessage(body), {
       onSuccess: (success) => {
         res.status(200).send('OK');
       },
