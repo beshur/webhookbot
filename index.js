@@ -86,8 +86,7 @@ function handleMessage(sender_psid, received_message) {
         break;
       case '/help':
         response = {
-          "text": `Send /start to create new webhook URL.\n
-            Send /list to get the list of your webhook URLs.` 
+          "text": `Send /start to create new webhook URL.\nSend /list to get the list of your webhook URLs.` 
         }
         break;
 
