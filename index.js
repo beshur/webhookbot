@@ -7,6 +7,7 @@ const
   config = require('./config.json'),
   ClientWebhooks = require('./src/ClientWebhooks'),
   Firebase = require('./src/Firebase'),
+  Analytics = require('./src/Analytics'),
   request = require('request'),
   uuidv4 = require('uuid/v4'),
   _ = require('underscore'),
@@ -14,7 +15,8 @@ const
 
 const PORT = process.env.PORT || 1337;
 
-const firebaseInstance = new Firebase(config.FIREBASE);
+const analyticsInstance = new Analytics(config.GA_ID);
+const firebaseInstance = new Firebase(config.FIREBASE, analyticsInstance);
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
@@ -98,11 +100,11 @@ function handleMessage(sender_psid, received_message) {
     }
     // Create the payload for a basic text message
   }  
-  console.log('handleMessage response', response);
   // Sends the response message
   if (async) {
     return;
   }
+  console.log('handleMessage response', response);
   callSendAPI(sender_psid, response, {
     onSuccess: () => {},
     onError: () => {}
