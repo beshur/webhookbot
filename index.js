@@ -15,6 +15,19 @@ const
 
 const PORT = process.env.PORT || 1337;
 
+const HELP_TEXT_REQUEST = `On your webhook URL:
+Send POST <Content-Type: application/json> with the data structured like this:
+{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}`;
+const HELP_TEXT_COMMANDS = `Commands:\n
+\`/start\`
+to create new webhook URL;
+\`/list\`
+to get the list of your webhook URLs;
+\`/delete\`
+to get help on how to delete webhooks;
+\`/help\`
+to display this prompt;`;
+
 const analyticsInstance = new Analytics(config.GA_ID);
 const firebaseInstance = new Firebase(config.FIREBASE, analyticsInstance);
 
@@ -24,19 +37,26 @@ function handleMessage(sender_psid, received_message) {
   var async = false;
 
   console.log('handleMessage is postback', typeof received_message.payload !== 'undefined');
+
   // Check if the message contains text
   if (received_message.text) {
+    let receivedText = received_message.text;
+    const deleteWebhookIdRegexp = /\/delete (-[A-Z_]\w+)/;
+    const receivedDeleteWithId = deleteWebhookIdRegexp.test(receivedText);
 
-    switch(received_message.text) {
+    // on top of switch because it's hard to put regex in this switch
+    if (receivedDeleteWithId) {
+      handleDeleteWithId(receivedText, sender_psid, deleteWebhookIdRegexp);
+      return;
+    }
+
+    switch(receivedText) {
       case '/start':
         async = true;
-        // let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
         firebaseInstance.createWebhook(sender_psid).then((success) => {
           let clientHookUrl = createWebhookUrl(success.key);
           response = {
-            "text": `Send your requests here:\n${clientHookUrl}
-              \n\nSend POST <Content-Type: application/json> with the data structured like this:
-              \n{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}` 
+            "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 
           }
 
           callSendAPI(sender_psid, response, {
@@ -58,13 +78,41 @@ function handleMessage(sender_psid, received_message) {
         });
 
         break;
-      case '/list':
+      case '/delete':
+        async = true;
+        // let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
+        firebaseInstance.listWebhooks(sender_psid).then((list) => {
+          let hooksList = prettyHookIdsLastHitList(list);
+          response = {
+            "text": `Your webhooks:${hooksList}\n\nSend \`/delete <webhook id>\` as presented in the list` 
+          }
+
+          callSendAPI(sender_psid, response, {
+            onSuccess: () => {},
+            onError: () => {}
+          });
+
+        }).catch((err) => {
+          response = {
+            'text': 'Something went wrong. Please try again later.'
+          }
+          // notify user of error
+          callSendAPI(sender_psid, response, {
+            onSuccess: () => {},
+            onError: () => {}
+          });
+
+          console.error('deleteWebhooks', err);
+        });
+
+        break;
+       case '/list':
         async = true;
         // let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
         firebaseInstance.listWebhooks(sender_psid).then((list) => {
           let hooksList = prettyHooksList(list);
           response = {
-            "text": `Your webhooks:\n${hooksList}` 
+            "text": `Your webhooks:${hooksList}\n\nSend /delete to understand how to delete webhooks URLs.` 
           }
 
           callSendAPI(sender_psid, response, {
@@ -88,7 +136,7 @@ function handleMessage(sender_psid, received_message) {
         break;
       case '/help':
         response = {
-          "text": `Send /start to create new webhook URL.\nSend /list to get the list of your webhook URLs.` 
+          "text": `${HELP_TEXT_COMMANDS}\n\n${HELP_TEXT_REQUEST}` 
         }
         break;
 
@@ -109,6 +157,45 @@ function handleMessage(sender_psid, received_message) {
     onSuccess: () => {},
     onError: () => {}
   });    
+}
+
+function handleDeleteWithId(receivedText, sender_psid, deleteWebhookIdRegexp) {
+  let response;
+  let webhookTest = deleteWebhookIdRegexp.exec(receivedText);
+  if (webhookTest.length < 2) {
+    response = {
+      "text": `Could not understand the webhook id. Please try again.` 
+    }
+    return callSendAPI(sender_psid, response, {
+      onSuccess: () => {},
+      onError: () => {}
+    });
+  }
+  const webhookId = webhookTest[1];
+  firebaseInstance.deleteWebhook(webhookId, sender_psid).then((success) => {
+    response = {
+      "text": `Successfully deleted ${webhookId}` 
+    }
+
+    callSendAPI(sender_psid, response, {
+      onSuccess: () => {},
+      onError: () => {}
+    });
+
+  }).catch((err) => {
+    response = {
+      'text': 'Something went wrong. Please try again later.'
+    }
+    // notify user of error
+    callSendAPI(sender_psid, response, {
+      onSuccess: () => {},
+      onError: () => {}
+    });
+
+    console.error('deleteWebhooks with id', err);
+  });
+
+
 }
 
 // Handles messaging_postbacks events
@@ -174,11 +261,28 @@ function prettyHooksList(list) {
   return result;
 }
 
+function prettyHookIdsLastHitList(list) {
+  let result = '';
+  let resultList = [];
+  if (list) {
+    resultList = _.map(list, prettyHookIdLastHitItem);
+    result = resultList.join('\n');
+  }
+
+  return result;
+}
+
 function prettyHookItem(item, key) {
-  let result = '* ';
-  let createdOn = ` Created on ${new Date(item.createdOn).toString()}`;
+  let result = '\n';
+  let createdOn = `\nCreated on ${new Date(item.createdOn).toString()}`;
   let url = createWebhookUrl(key);
   return result + url + createdOn;
+}
+
+function prettyHookIdLastHitItem(item, key) {
+  let result = '\n';
+  let lastHitOn = `\nLast hit on ${new Date(item.lastHitOn).toString()}`;
+  return result + key + lastHitOn;
 }
 
 function createWebhookUrl(hookId) {

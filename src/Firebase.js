@@ -83,6 +83,23 @@ let firebaseApp = function(firebaseConfig, analyticsInstance) {
     });
   }
 
+  this.deleteWebhook = (webhookId, senderId) => {
+    return new Promise((resolve, reject) => {
+      this.getWebhook(webhookId)
+        .then(webhookObj => {
+          if (webhookObj.userId !== senderId) {
+            const errorText = `401 Unauthorized. Trying to delete someone else webhook id: ${webhookId} sender: ${senderId}`;
+            console.warn(errorText);
+            reject(errorText);
+            return;
+          }
+          this.database.ref(webhooksRef + webhookId).remove()
+            .then(resolve)
+            .catch(reject);
+        }).catch(reject);
+    });
+  }
+
   this.listWebhooks = function(userId) {
     console.log(this.LOG, 'listWebhooks for ', userId, typeof userId);
     return new Promise((resolve, reject) => {
