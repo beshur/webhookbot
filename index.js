@@ -10,6 +10,7 @@ const
   Analytics = require('./src/Analytics'),
   request = require('request'),
   uuidv4 = require('uuid/v4'),
+  fs = require('fs'),
   _ = require('underscore'),
   app = express().use(bodyParser.json()); // creates express http server
 
@@ -17,7 +18,7 @@ const PORT = process.env.PORT || 1337;
 
 const HELP_TEXT_REQUEST = `On your webhook URL:
 Send POST <Content-Type: application/json> with the data structured like this:
-{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}`;
+\`{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}\``;
 const HELP_TEXT_COMMANDS = `Commands:\n
 \`/start\`
 to create new webhook URL;
@@ -136,7 +137,7 @@ function handleMessage(sender_psid, received_message) {
         break;
       case '/help':
         response = {
-          "text": `${HELP_TEXT_COMMANDS}\n\n${HELP_TEXT_REQUEST}` 
+          "text": `${HELP_TEXT_COMMANDS}\n\n${HELP_TEXT_REQUEST}`
         }
         break;
 
@@ -438,7 +439,9 @@ app.post('/webhook/:id', (req, res) => {
   });
 });
 
-setupMessengerProfile();
+if (!fs.existsSync('LOCAL')) {
+  setupMessengerProfile();
+}
 
 // Sets server port and logs message on success
 app.listen(PORT, () => console.log('webhook is listening on', PORT));
