@@ -209,13 +209,16 @@ function handlePostback(sender_psid, received_postback) {
 }
 
 // Sends response messages via the Send API
-function callSendAPI(sender_psid, response, callback) {
+function callSendAPI(sender_psid, response, callback, meta) {
   // Construct the message body)
   let request_body = {
     "recipient": {
       "id": sender_psid
     },
     "message": response
+  }
+  if (meta) {
+    request_body = _.extend(request_body, meta);
   }
 
   if (process.env.DEBUG) {
@@ -429,6 +432,9 @@ app.post('/webhook/:id', (req, res) => {
       onError: (error) => {
         res.status(500).send('ERROR');
       }
+    }, {
+      'messaging_type': 'MESSAGE_TAG',
+      'tag': 'NON_PROMOTIONAL_SUBSCRIPTION'
     });
       
   }).catch(err => {
