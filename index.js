@@ -8,6 +8,7 @@ const
   ClientWebhooks = require('./src/ClientWebhooks'),
   Firebase = require('./src/Firebase'),
   Analytics = require('./src/Analytics'),
+  Config = require('./src/Config'),
   request = require('request'),
   uuidv4 = require('uuid/v4'),
   fs = require('fs'),
@@ -15,6 +16,8 @@ const
   app = express().use(bodyParser.json()); // creates express http server
 
 const PORT = process.env.PORT || 1337;
+
+console.log('WHB_FIREBASE', Config.get('WHB_FIREBASE*'));
 
 const HELP_TEXT_REQUEST = `On your webhook URL:
 Send POST <Content-Type: application/json> with the data structured like this:
@@ -29,8 +32,8 @@ to get help on how to delete webhooks;
 \`/help\`
 to display this prompt;`;
 
-const analyticsInstance = new Analytics(config.GA_ID);
-const firebaseInstance = new Firebase(config.FIREBASE, analyticsInstance);
+const analyticsInstance = new Analytics(Config.get('WHB_GA_ID'));
+const firebaseInstance = new Firebase(Config, analyticsInstance);
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
@@ -81,7 +84,6 @@ function handleMessage(sender_psid, received_message) {
         break;
       case '/delete':
         async = true;
-        // let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
         firebaseInstance.listWebhooks(sender_psid).then((list) => {
           let hooksList = prettyHookIdsLastHitList(list);
           response = {
@@ -109,7 +111,6 @@ function handleMessage(sender_psid, received_message) {
         break;
        case '/list':
         async = true;
-        // let clientHookUrl = `${config.APP_HOST}webhook/${newId}`;
         firebaseInstance.listWebhooks(sender_psid).then((list) => {
           let hooksList = prettyHooksList(list);
           response = {
@@ -229,7 +230,7 @@ function callSendAPI(sender_psid, response, callback, meta) {
   // Send the HTTP request to the Messenger Platform
   request({
     "uri": "https://graph.facebook.com/v2.6/me/messages",
-    "qs": { "access_token": config.FB_PAGE_ACCESS_TOKEN },
+    "qs": { "access_token": Config.get('WHB_FB_PAGE_ACCESS_TOKEN') },
     "method": "POST",
     "json": request_body
   }, (err, res, body) => {
@@ -290,7 +291,7 @@ function prettyHookIdLastHitItem(item, key) {
 }
 
 function createWebhookUrl(hookId) {
-  return `${config.APP_HOST}webhook/${hookId}`;
+  return `${Config.get('WHB_APP_HOST')}webhook/${hookId}`;
 }
 
 function setupMessengerProfile() {
@@ -326,7 +327,7 @@ function setupMessengerProfile() {
   }
   request({
     'uri': 'https://graph.facebook.com/v2.6/me/messenger_profile',
-    'qs': { 'access_token': config.FB_PAGE_ACCESS_TOKEN },
+    'qs': { 'access_token': Config.get('WHB_FB_PAGE_ACCESS_TOKEN') },
     'method': 'POST',
     'json': settingsBody
   }, (err, res, body) => {
@@ -351,7 +352,7 @@ app.get('/health-check', (req, res) => {
 app.get('/webhook', (req, res) => {
 
   // Your verify token. Should be a random string.
-  let VERIFY_TOKEN = config.FB_VERIFY_TOKEN;
+  let VERIFY_TOKEN = Config.get('WHB_FB_VERIFY_TOKEN');
     
   // Parse the query params
   let mode = req.query['hub.mode'];

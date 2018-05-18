@@ -1,6 +1,8 @@
 'use strict';
 const firebase = require('firebase');
 const _ = require('underscore');
+const Config = require('./Config');
+
 const webhookSchema = {
   'userId': '',
   'createdOn': '',
@@ -18,7 +20,14 @@ let firebaseApp = function(firebaseConfig, analyticsInstance) {
   this.analytics = analyticsInstance;
 
   this.init = function() {
-    this.app = firebase.initializeApp(firebaseConfig);
+    this.app = firebase.initializeApp({
+      "apiKey": Config.get('WHB_FIREBASE_apiKey'),
+      "authDomain": Config.get('WHB_FIREBASE_authDomain'),
+      "databaseURL": Config.get('WHB_FIREBASE_databaseURL'),
+      "projectId": Config.get('WHB_FIREBASE_projectId'),
+      "storageBucket":Config.get('WHB_FIREBASE_storageBucket'),
+      "messagingSenderId": Config.get('WHB_FIREBASE_messagingSenderId')
+    });
     this.database = this.app.database();
     this.webhooks = {};
 
