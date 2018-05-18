@@ -16,8 +16,6 @@ const
 
 const PORT = process.env.PORT || 1337;
 
-console.log('WHB_FIREBASE', Config.get('WHB_FIREBASE*'));
-
 const HELP_TEXT_REQUEST = `On your webhook URL:
 Send POST <Content-Type: application/json> with the data structured like this:
 \`{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}\``;
