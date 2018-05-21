@@ -4,7 +4,6 @@
 const
   express = require('express'),
   bodyParser = require('body-parser'),
-  ClientWebhooks = require('./src/ClientWebhooks'),
   Firebase = require('./src/Firebase'),
   Analytics = require('./src/Analytics'),
   Config = require('./src/Config'),
