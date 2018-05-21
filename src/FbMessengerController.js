@@ -62,7 +62,7 @@ class FbMessengerController {
   handlePostback(senderId, receivedPostback) {
     console.log(this.LOG, 'handlePostback');
     // it's a hack
-    handleMessage(senderId, _.extend(receivedPostback, {
+    this.handleMessage(senderId, _.extend(receivedPostback, {
       text: receivedPostback.payload
     }));
   }
