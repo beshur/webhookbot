@@ -31,14 +31,7 @@ class FbMessengerController {
         "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 
       }
       this.callSendAPI(senderId, response);
-    }).catch((err) => {
-      response = {
-        'text': 'Something went wrong. Please try again later.'
-      }
-      // notify user of error
-      this.callSendAPI(senderId, response);
-      console.error(this.LOG, 'createWebhook', err);
-    });
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleStart', senderId));
   }
 
   /*
@@ -53,14 +46,7 @@ class FbMessengerController {
         "text": `Your webhooks:${hooksList}\n\nSend \`/delete <webhook id>\` as presented in the list` 
       }
       this.callSendAPI(senderId, response);
-    }).catch((err) => {
-      response = {
-        'text': 'Something went wrong. Please try again later.'
-      }
-      // notify user of error
-      this.callSendAPI(senderId, response);
-      console.error('deleteWebhooks', err);
-    });
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleDelete', senderId));
   }
   /*
    * Handle /delete <id> command
@@ -81,15 +67,30 @@ class FbMessengerController {
         "text": `Successfully deleted ${webhookId}` 
       }
       this.callSendAPI(senderId, response);
-    }).catch((err) => {
-      response = {
-        'text': 'Something went wrong. Please try again later.'
-      }
-      // notify user of error
-      this.callSendAPI(senderId, response);
-      console.error('deleteWebhooks with id', err);
-    });
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleDeleteWithId', senderId));
   }
+  /*
+   * Handle /list command
+   */
+  handleList(senderId) {
+    let response;
+    this.props.firebase.listWebhooks(senderId).then((list) => {
+      let hooksList = this.prettyHooksList(list);
+      response = {
+        "text": `Your webhooks:${hooksList}\n\nSend /delete to understand how to delete webhooks URLs.` 
+      }
+      this.callSendAPI(senderId, response);
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleList', senderId));
+  }
+
+  _defaultFirebaseCatch(senderId, methodName, err) {
+    // notify user of error
+    this.callSendAPI(senderId, {
+      'text': 'Something went wrong. Please try again later.'
+    });
+    console.error(this.LOG, methodName, err);
+  }
+
   // Sends response messages via the Send API
   callSendAPI(senderId, response, callback, meta) {
     // Construct the message body)
@@ -148,7 +149,7 @@ class FbMessengerController {
     let result = '';
     let resultList = [];
     if (list) {
-      resultList = _.map(list, this.prettyHookItem);
+      resultList = _.map(list, this.prettyHookItem.bind(this));
       result = resultList.join('\n');
     }
 

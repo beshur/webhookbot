@@ -67,30 +67,7 @@ function handleMessage(sender_psid, received_message) {
         break;
        case '/list':
         async = true;
-        firebaseInstance.listWebhooks(sender_psid).then((list) => {
-          let hooksList = prettyHooksList(list);
-          response = {
-            "text": `Your webhooks:${hooksList}\n\nSend /delete to understand how to delete webhooks URLs.` 
-          }
-
-          callSendAPI(sender_psid, response, {
-            onSuccess: () => {},
-            onError: () => {}
-          });
-
-        }).catch((err) => {
-          response = {
-            'text': 'Something went wrong. Please try again later.'
-          }
-          // notify user of error
-          callSendAPI(sender_psid, response, {
-            onSuccess: () => {},
-            onError: () => {}
-          });
-
-          console.error('listWebhooks', err);
-        });
-
+        return fbMesControllerInstance.handleList(sender_psid);
         break;
       case '/help':
         response = {
