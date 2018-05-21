@@ -8,6 +8,7 @@ const
   Firebase = require('./src/Firebase'),
   Analytics = require('./src/Analytics'),
   Config = require('./src/Config'),
+  FbMessengerController = require('./src/FbMessengerController'),
   request = require('request'),
   uuidv4 = require('uuid/v4'),
   fs = require('fs'),
@@ -31,6 +32,11 @@ to display this prompt;`;
 
 const analyticsInstance = new Analytics(Config.get('WHB_GA_ID'));
 const firebaseInstance = new Firebase(Config, analyticsInstance);
+const fbMesControllerInstance = new FbMessengerController({
+  analytics: analyticsInstance,
+  firebase: firebaseInstance,
+  config: Config
+});
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
@@ -54,30 +60,7 @@ function handleMessage(sender_psid, received_message) {
     switch(receivedText) {
       case '/start':
         async = true;
-        firebaseInstance.createWebhook(sender_psid).then((success) => {
-          let clientHookUrl = createWebhookUrl(success.key);
-          response = {
-            "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 
-          }
-
-          callSendAPI(sender_psid, response, {
-            onSuccess: () => {},
-            onError: () => {}
-          });
-
-        }).catch((err) => {
-          response = {
-            'text': 'Something went wrong. Please try again later.'
-          }
-          // notify user of error
-          callSendAPI(sender_psid, response, {
-            onSuccess: () => {},
-            onError: () => {}
-          });
-
-          console.error('createWebhook', err);
-        });
-
+        return fbMesControllerInstance.handleStart(sender_psid);
         break;
       case '/delete':
         async = true;
