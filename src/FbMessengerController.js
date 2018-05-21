@@ -24,34 +24,37 @@ class FbMessengerController {
     console.log(this.LOG, 'handleMessage is postback', typeof message.payload !== 'undefined');
 
     // Check if the message contains text
-    if (message.text) {
-      let receivedText = message.text;
-      const receivedDeleteWithId = this.deleteWebhookIdRegexp.test(receivedText);
+    if (!message.text) {
+      return this.callSendAPI(senderId, {
+        "text": "You sent empty text"
+      });
+    }
+    let receivedText = message.text;
+    const receivedDeleteWithId = this.deleteWebhookIdRegexp.test(receivedText);
 
-      // on top of switch because it's hard to put regex in this switch
-      if (receivedDeleteWithId) {
-        this.handleDeleteWithId(senderId, receivedText);
-        return;
-      }
+    // on top of switch because it's hard to put regex in this switch
+    if (receivedDeleteWithId) {
+      this.handleDeleteWithId(senderId, receivedText);
+      return;
+    }
 
-      switch(receivedText) {
-        case '/start':
-          this.handleStart(senderId);
-          break;
-        case '/delete':
-          this.handleDelete(senderId);
-          break;
-         case '/list':
-          this.handleList(senderId);
-          break;
-        case '/help':
-          this.handleHelp(senderId);
-          break;
+    switch(receivedText) {
+      case '/start':
+        this.handleStart(senderId);
+        break;
+      case '/delete':
+        this.handleDelete(senderId);
+        break;
+       case '/list':
+        this.handleList(senderId);
+        break;
+      case '/help':
+        this.handleHelp(senderId);
+        break;
 
-        default:
-          this.handleDefault(senderId, receivedText);
-          break;
-      }
+      default:
+        this.handleDefault(senderId, receivedText);
+        break;
     }
   }
 
@@ -142,7 +145,7 @@ class FbMessengerController {
    */
   handleDefault(senderId, receivedText) {
     this.callSendAPI(senderId, {
-      "text": `You sent the message: "${receivedText.text}".`
+      "text": `You sent the message: "${receivedText}".`
     });
   }
 
