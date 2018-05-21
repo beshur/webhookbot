@@ -24,60 +24,15 @@ const fbMesControllerInstance = new FbMessengerController({
   analytics: analyticsInstance,
   firebase: firebaseInstance,
   config: Config,
-  is_local: LOCAL
+  isLocal: LOCAL
 });
 
-// Handles messages events
-function handleMessage(sender_psid, received_message) {
-  console.log('handleMessage is postback', typeof received_message.payload !== 'undefined');
-
-  // Check if the message contains text
-  if (received_message.text) {
-    let receivedText = received_message.text;
-    const receivedDeleteWithId = fbMesControllerInstance.deleteWebhookIdRegexp.test(receivedText);
-
-    // on top of switch because it's hard to put regex in this switch
-    if (receivedDeleteWithId) {
-      fbMesControllerInstance.handleDeleteWithId(sender_psid, receivedText);
-      return;
-    }
-
-    switch(receivedText) {
-      case '/start':
-        fbMesControllerInstance.handleStart(sender_psid);
-        break;
-      case '/delete':
-        fbMesControllerInstance.handleDelete(sender_psid);
-        break;
-       case '/list':
-        fbMesControllerInstance.handleList(sender_psid);
-        break;
-      case '/help':
-        fbMesControllerInstance.handleHelp(sender_psid);
-        break;
-
-      default:
-        fbMesControllerInstance.handleDefault(sender_psid, receivedText);
-        break;
-    }
-  }  
-}
-
-// Handles messaging_postbacks events
-function handlePostback(sender_psid, received_postback) {
-  console.log('handlePostback');
-  let payload = received_postback.payload;
-  handleMessage(sender_psid, _.extend(received_postback, {
-    text: payload
-  }));
-}
-
 app.get('/', (req, res) => {
-  res.send('OK');
+  res.redirect(Config.get('WHB_INDEX_REDIRECT'));
 });
 
 app.get('/health-check', (req, res) => {
-  res.send('OK ' + process.uptime());
+  res.send('OK');
 });
 
 // Adds support for GET requests to our webhook
@@ -129,9 +84,9 @@ app.post('/webhook', (req, res) => {
       console.log('Sender PSID: ' + sender_psid);
 
       if (webhook_event.message) {
-        handleMessage(sender_psid, webhook_event.message);        
+        fbMesControllerInstance.handleMessage(sender_psid, webhook_event.message);        
       } else if (webhook_event.postback) {
-        handlePostback(sender_psid, webhook_event.postback);
+        fbMesControllerInstance.handlePostback(sender_psid, webhook_event.postback);
       }
 
     });

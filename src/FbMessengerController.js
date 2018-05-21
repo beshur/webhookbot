@@ -14,13 +14,54 @@ class FbMessengerController {
     this.FB_MESSAGES = 'https://graph.facebook.com/v2.6/me/messages';
     this.FB_PROFILE = 'https://graph.facebook.com/v2.6/me/messenger_profile';
 
-    if (!props.is_local) {
+    if (!props.isLocal) {
       this.setupMessengerProfile();
     }
   }
 
   handleMessage(senderId, message) {
     // #TODO: FSM
+    console.log(this.LOG, 'handleMessage is postback', typeof message.payload !== 'undefined');
+
+    // Check if the message contains text
+    if (message.text) {
+      let receivedText = message.text;
+      const receivedDeleteWithId = this.deleteWebhookIdRegexp.test(receivedText);
+
+      // on top of switch because it's hard to put regex in this switch
+      if (receivedDeleteWithId) {
+        this.handleDeleteWithId(senderId, receivedText);
+        return;
+      }
+
+      switch(receivedText) {
+        case '/start':
+          this.handleStart(senderId);
+          break;
+        case '/delete':
+          this.handleDelete(senderId);
+          break;
+         case '/list':
+          this.handleList(senderId);
+          break;
+        case '/help':
+          this.handleHelp(senderId);
+          break;
+
+        default:
+          this.handleDefault(senderId, receivedText);
+          break;
+      }
+    }
+  }
+
+  // Handles messaging_postbacks events
+  handlePostback(senderId, receivedPostback) {
+    console.log(this.LOG, 'handlePostback');
+    // it's a hack
+    handleMessage(senderId, _.extend(receivedPostback, {
+      text: receivedPostback.payload
+    }));
   }
 
   /*
@@ -101,7 +142,7 @@ class FbMessengerController {
    */
   handleDefault(senderId, receivedText) {
     this.callSendAPI(senderId, {
-      "text": `You sent the message: "${received_message.text}".`
+      "text": `You sent the message: "${receivedText.text}".`
     });
   }
 
