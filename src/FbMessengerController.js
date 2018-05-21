@@ -1,6 +1,7 @@
 'use strict';
-const {HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts'),
-  request = require('request');
+const _ = require('underscore'),
+  request = require('request'),
+  {HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
 
 /*
  * Facebook Messenger Controller
@@ -17,6 +18,11 @@ class FbMessengerController {
 
   }
 
+  /*
+   * Handle /start command
+   * @param string senderId
+   * @param string message
+   */
   handleStart(senderId, message) {
     let response;
     this.props.firebase.createWebhook(senderId).then((success) => {
@@ -24,23 +30,64 @@ class FbMessengerController {
       response = {
         "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 
       }
-
-      this.callSendAPI(senderId, response, {
-        onSuccess: () => {},
-        onError: () => {}
-      });
-
+      this.callSendAPI(senderId, response);
     }).catch((err) => {
       response = {
         'text': 'Something went wrong. Please try again later.'
       }
       // notify user of error
-      this.callSendAPI(senderId, response, {
-        onSuccess: () => {},
-        onError: () => {}
-      });
-
+      this.callSendAPI(senderId, response);
       console.error(this.LOG, 'createWebhook', err);
+    });
+  }
+
+  /*
+   * Handle /delete command
+   * @param string senderId
+   */
+  handleDelete(senderId) {
+    let response;
+    this.props.firebase.listWebhooks(senderId).then((list) => {
+      let hooksList = this.prettyHookIdsLastHitList(list);
+      response = {
+        "text": `Your webhooks:${hooksList}\n\nSend \`/delete <webhook id>\` as presented in the list` 
+      }
+      this.callSendAPI(senderId, response);
+    }).catch((err) => {
+      response = {
+        'text': 'Something went wrong. Please try again later.'
+      }
+      // notify user of error
+      this.callSendAPI(senderId, response);
+      console.error('deleteWebhooks', err);
+    });
+  }
+  /*
+   * Handle /delete <id> command
+   * @param string senderId
+   */
+  handleDeleteWithId(senderId, receivedText) {
+    let response;
+    let webhookTest = this.deleteWebhookIdRegexp.exec(receivedText);
+    if (webhookTest.length < 2) {
+      response = {
+        "text": `Could not understand the webhook id. Please try again.` 
+      }
+      return this.callSendAPI(senderId, response);
+    }
+    const webhookId = webhookTest[1];
+    this.props.firebase.deleteWebhook(webhookId, senderId).then((success) => {
+      response = {
+        "text": `Successfully deleted ${webhookId}` 
+      }
+      this.callSendAPI(senderId, response);
+    }).catch((err) => {
+      response = {
+        'text': 'Something went wrong. Please try again later.'
+      }
+      // notify user of error
+      this.callSendAPI(senderId, response);
+      console.error('deleteWebhooks with id', err);
     });
   }
   // Sends response messages via the Send API
@@ -62,20 +109,28 @@ class FbMessengerController {
       console.log(this.LOG, 'callSendAPI');
     }
     // Send the HTTP request to the Messenger Platform
-    request({
-      "uri": this.FB_MESSAGES,
-      "qs": { "access_token": this.props.config.get('WHB_FB_PAGE_ACCESS_TOKEN') },
-      "method": "POST",
-      "json": request_body
-    }, (err, res, body) => {
-      if (!err) {
-        console.log('message sent!')
-        callback.onSuccess(true);
-      } else {
-        console.error("Unable to send message:" + err);
-        callback.onError(err);
-      }
-    }); 
+    return new Promise((resolve, reject) => {
+      request({
+        "uri": this.FB_MESSAGES,
+        "qs": { "access_token": this.props.config.get('WHB_FB_PAGE_ACCESS_TOKEN') },
+        "method": "POST",
+        "json": request_body
+      }, (err, res, body) => {
+        if (err) {
+          console.error("Unable to send message:" + err);
+          // callback.onError(err);
+          return reject(err);
+        } else {
+          console.log('message sent!')
+          // callback.onSuccess(true);
+          resolve();
+        }
+      }); 
+    });
+  }
+
+  get deleteWebhookIdRegexp() {
+    return /\/delete (-[A-Z_]\w+)/g;
   }
 
   formatProcessedWebhookMessage(body) {
@@ -93,7 +148,7 @@ class FbMessengerController {
     let result = '';
     let resultList = [];
     if (list) {
-      resultList = _.map(list, prettyHookItem);
+      resultList = _.map(list, this.prettyHookItem);
       result = resultList.join('\n');
     }
 
@@ -104,7 +159,7 @@ class FbMessengerController {
     let result = '';
     let resultList = [];
     if (list) {
-      resultList = _.map(list, prettyHookIdLastHitItem);
+      resultList = _.map(list, this.prettyHookIdLastHitItem);
       result = resultList.join('\n');
     }
 

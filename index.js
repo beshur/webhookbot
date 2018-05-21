@@ -48,12 +48,11 @@ function handleMessage(sender_psid, received_message) {
   // Check if the message contains text
   if (received_message.text) {
     let receivedText = received_message.text;
-    const deleteWebhookIdRegexp = /\/delete (-[A-Z_]\w+)/;
-    const receivedDeleteWithId = deleteWebhookIdRegexp.test(receivedText);
+    const receivedDeleteWithId = fbMesControllerInstance.deleteWebhookIdRegexp.test(receivedText);
 
     // on top of switch because it's hard to put regex in this switch
     if (receivedDeleteWithId) {
-      handleDeleteWithId(receivedText, sender_psid, deleteWebhookIdRegexp);
+      fbMesControllerInstance.handleDeleteWithId(sender_psid, receivedText);
       return;
     }
 
@@ -64,30 +63,7 @@ function handleMessage(sender_psid, received_message) {
         break;
       case '/delete':
         async = true;
-        firebaseInstance.listWebhooks(sender_psid).then((list) => {
-          let hooksList = prettyHookIdsLastHitList(list);
-          response = {
-            "text": `Your webhooks:${hooksList}\n\nSend \`/delete <webhook id>\` as presented in the list` 
-          }
-
-          callSendAPI(sender_psid, response, {
-            onSuccess: () => {},
-            onError: () => {}
-          });
-
-        }).catch((err) => {
-          response = {
-            'text': 'Something went wrong. Please try again later.'
-          }
-          // notify user of error
-          callSendAPI(sender_psid, response, {
-            onSuccess: () => {},
-            onError: () => {}
-          });
-
-          console.error('deleteWebhooks', err);
-        });
-
+        return fbMesControllerInstance.handleDelete(sender_psid);
         break;
        case '/list':
         async = true;
@@ -139,45 +115,6 @@ function handleMessage(sender_psid, received_message) {
     onSuccess: () => {},
     onError: () => {}
   });    
-}
-
-function handleDeleteWithId(receivedText, sender_psid, deleteWebhookIdRegexp) {
-  let response;
-  let webhookTest = deleteWebhookIdRegexp.exec(receivedText);
-  if (webhookTest.length < 2) {
-    response = {
-      "text": `Could not understand the webhook id. Please try again.` 
-    }
-    return callSendAPI(sender_psid, response, {
-      onSuccess: () => {},
-      onError: () => {}
-    });
-  }
-  const webhookId = webhookTest[1];
-  firebaseInstance.deleteWebhook(webhookId, sender_psid).then((success) => {
-    response = {
-      "text": `Successfully deleted ${webhookId}` 
-    }
-
-    callSendAPI(sender_psid, response, {
-      onSuccess: () => {},
-      onError: () => {}
-    });
-
-  }).catch((err) => {
-    response = {
-      'text': 'Something went wrong. Please try again later.'
-    }
-    // notify user of error
-    callSendAPI(sender_psid, response, {
-      onSuccess: () => {},
-      onError: () => {}
-    });
-
-    console.error('deleteWebhooks with id', err);
-  });
-
-
 }
 
 // Handles messaging_postbacks events
