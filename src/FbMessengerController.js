@@ -12,10 +12,15 @@ class FbMessengerController {
     this.props = props;
     this.LOG = 'FbMessengerController';
     this.FB_MESSAGES = 'https://graph.facebook.com/v2.6/me/messages';
+    this.FB_PROFILE = 'https://graph.facebook.com/v2.6/me/messenger_profile';
+
+    if (!props.is_local) {
+      this.setupMessengerProfile();
+    }
   }
 
   handleMessage(senderId, message) {
-
+    // #TODO: FSM
   }
 
   /*
@@ -161,6 +166,52 @@ class FbMessengerController {
 
   get deleteWebhookIdRegexp() {
     return /\/delete (-[A-Z_]\w+)/g;
+  }
+
+  setupMessengerProfile() {
+    let settingsBody = {
+      'get_started':{
+        'payload':'/help'
+      },
+      'greeting': [{
+        'locale':'default',
+        'text':`Hi!
+        \nWebhook Bot can create the webhook URL that you can use to forward messages to yourself.
+        \nType /help to display the commands.`
+      }],
+      'persistent_menu':[{
+        'locale':'default',
+        'composer_input_disabled': false,
+        'call_to_actions':[{
+          'title':'Get started',
+          'type':'postback',
+          'payload':'/help'
+        },
+        {
+          'title':'Create Webhook',
+          'type':'postback',
+          'payload':'/start'
+        },
+        {
+          'type':'postback',
+          'title':'My Webhooks',
+          'payload':'/list'
+        }]
+      }]
+    }
+    request({
+      'uri': this.FB_PROFILE,
+      'qs': { 'access_token': this.props.config.get('WHB_FB_PAGE_ACCESS_TOKEN') },
+      'method': 'POST',
+      'json': settingsBody
+    }, (err, res, body) => {
+      if (!err) {
+        console.log('setupMessengerProfile OK!')
+      } else {
+        console.error("setupMessengerProfile error:" + err);
+      }
+    }); 
+
   }
 
   formatProcessedWebhookMessage(body) {

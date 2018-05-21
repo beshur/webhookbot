@@ -16,26 +16,15 @@ const
   app = express().use(bodyParser.json()); // creates express http server
 
 const PORT = process.env.PORT || 1337;
-
-const HELP_TEXT_REQUEST = `On your webhook URL:
-Send POST <Content-Type: application/json> with the data structured like this:
-\`{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}\``;
-const HELP_TEXT_COMMANDS = `Commands:\n
-\`/start\`
-to create new webhook URL;
-\`/list\`
-to get the list of your webhook URLs;
-\`/delete\`
-to get help on how to delete webhooks;
-\`/help\`
-to display this prompt;`;
+const LOCAL = fs.existsSync('LOCAL');
 
 const analyticsInstance = new Analytics(Config.get('WHB_GA_ID'));
 const firebaseInstance = new Firebase(Config, analyticsInstance);
 const fbMesControllerInstance = new FbMessengerController({
   analytics: analyticsInstance,
   firebase: firebaseInstance,
-  config: Config
+  config: Config,
+  is_local: LOCAL
 });
 
 // Handles messages events
@@ -81,52 +70,6 @@ function handlePostback(sender_psid, received_postback) {
   handleMessage(sender_psid, _.extend(received_postback, {
     text: payload
   }));
-}
-
-function setupMessengerProfile() {
-  let settingsBody = {
-    'get_started':{
-      'payload':'/help'
-    },
-    'greeting': [{
-      'locale':'default',
-      'text':`Hi!
-      \nWebhook Bot can create the webhook URL that you can use to forward messages to yourself.
-      \nType /help to display the commands.`
-    }],
-    'persistent_menu':[{
-      'locale':'default',
-      'composer_input_disabled': false,
-      'call_to_actions':[{
-        'title':'Get started',
-        'type':'postback',
-        'payload':'/help'
-      },
-      {
-        'title':'Create Webhook',
-        'type':'postback',
-        'payload':'/start'
-      },
-      {
-        'type':'postback',
-        'title':'My Webhooks',
-        'payload':'/list'
-      }]
-    }]
-  }
-  request({
-    'uri': 'https://graph.facebook.com/v2.6/me/messenger_profile',
-    'qs': { 'access_token': Config.get('WHB_FB_PAGE_ACCESS_TOKEN') },
-    'method': 'POST',
-    'json': settingsBody
-  }, (err, res, body) => {
-    if (!err) {
-      console.log('setupMessengerProfile OK!')
-    } else {
-      console.error("setupMessengerProfile error:" + err);
-    }
-  }); 
-
 }
 
 app.get('/', (req, res) => {
@@ -229,10 +172,6 @@ app.post('/webhook/:id', (req, res) => {
     });
   });
 });
-
-if (!fs.existsSync('LOCAL')) {
-  setupMessengerProfile();
-}
 
 // Sets server port and logs message on success
 app.listen(PORT, () => console.log('webhook is listening on', PORT));
