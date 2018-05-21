@@ -29,7 +29,7 @@ function Analytics(GA_ID) {
   this.trackWebhookHit = (userId) => {
     const event = _.defaults({
       cid: userId,
-      ea: 'created'
+      ea: 'hit'
     }, this.eventTpl);
 
     return this.collect(event);

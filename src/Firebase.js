@@ -11,13 +11,11 @@ const webhookSchema = {
 
 const webhooksRef = 'webhooks/';
 
-let firebaseApp = function(firebaseConfig, analyticsInstance) {
+let firebaseApp = function() {
   this.app = {};
   this.database = {};
   this.webhooksRef = {};
   this.LOG = 'Firebase';
-
-  this.analytics = analyticsInstance;
 
   this.init = function() {
     this.app = firebase.initializeApp({
@@ -55,9 +53,7 @@ let firebaseApp = function(firebaseConfig, analyticsInstance) {
   }
 
   this.createWebhook = (userId) => {
-    let newWebHook = this.webhooksRef.push(this.generateNewWebhook(userId));
-    this.analytics.trackWebhookHit(userId).catch();
-    return newWebHook;
+    return this.webhooksRef.push(this.generateNewWebhook(userId));
   }
 
   this.webhookHit = (webhookId) => {
@@ -76,7 +72,6 @@ let firebaseApp = function(firebaseConfig, analyticsInstance) {
         return this.database.ref().update(updates)
           .then(success => {
             resolve(webhookObj);
-            this.analytics.trackWebhookHit(webhookObj.userId).catch();
           })
           .catch(reject);
       }).catch(err => {
