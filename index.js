@@ -40,9 +40,6 @@ const fbMesControllerInstance = new FbMessengerController({
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
-  var response;
-  var async = false;
-
   console.log('handleMessage is postback', typeof received_message.payload !== 'undefined');
 
   // Check if the message contains text
@@ -58,40 +55,23 @@ function handleMessage(sender_psid, received_message) {
 
     switch(receivedText) {
       case '/start':
-        async = true;
-        return fbMesControllerInstance.handleStart(sender_psid);
+        fbMesControllerInstance.handleStart(sender_psid);
         break;
       case '/delete':
-        async = true;
-        return fbMesControllerInstance.handleDelete(sender_psid);
+        fbMesControllerInstance.handleDelete(sender_psid);
         break;
        case '/list':
-        async = true;
-        return fbMesControllerInstance.handleList(sender_psid);
+        fbMesControllerInstance.handleList(sender_psid);
         break;
       case '/help':
-        response = {
-          "text": `${HELP_TEXT_COMMANDS}\n\n${HELP_TEXT_REQUEST}`
-        }
+        fbMesControllerInstance.handleHelp(sender_psid);
         break;
 
       default:
-        response = {
-          "text": `You sent the message: "${received_message.text}".`
-        }
+        fbMesControllerInstance.handleDefault(sender_psid, receivedText);
         break;
     }
-    // Create the payload for a basic text message
   }  
-  // Sends the response message
-  if (async) {
-    return;
-  }
-  console.log('handleMessage response', response);
-  callSendAPI(sender_psid, response, {
-    onSuccess: () => {},
-    onError: () => {}
-  });    
 }
 
 // Handles messaging_postbacks events

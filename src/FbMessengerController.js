@@ -82,6 +82,23 @@ class FbMessengerController {
       this.callSendAPI(senderId, response);
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleList', senderId));
   }
+  /*
+   * Handle /list command
+   */
+  handleHelp(senderId) {
+    this.callSendAPI(senderId, {
+      "text": `${HELP_TEXT_COMMANDS}\n\n${HELP_TEXT_REQUEST}`
+    });
+  }
+
+  /*
+   * Handle all other texts (echo)
+   */
+  handleDefault(senderId, receivedText) {
+    this.callSendAPI(senderId, {
+      "text": `You sent the message: "${received_message.text}".`
+    });
+  }
 
   _defaultFirebaseCatch(senderId, methodName, err) {
     // notify user of error
