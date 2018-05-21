@@ -9,7 +9,6 @@ const
   Config = require('./src/Config'),
   FbMessengerController = require('./src/FbMessengerController'),
   request = require('request'),
-  uuidv4 = require('uuid/v4'),
   fs = require('fs'),
   _ = require('underscore'),
   app = express().use(bodyParser.json()); // creates express http server
