@@ -22,3 +22,10 @@ export WHB_FIREBASE_storageBucket=
 export WHB_FIREBASE_messagingSenderId=
 export WHB_INDEX_REDIRECT=
 ```
+
+
+## Contribution and reuse
+
+Feel free to suggest your features or make pull-requests.
+
+For reuse see MIT license.
