@@ -83,91 +83,6 @@ function handlePostback(sender_psid, received_postback) {
   }));
 }
 
-// Sends response messages via the Send API
-function callSendAPI(sender_psid, response, callback, meta) {
-  // Construct the message body)
-  let request_body = {
-    "recipient": {
-      "id": sender_psid
-    },
-    "message": response
-  }
-  if (meta) {
-    request_body = _.extend(request_body, meta);
-  }
-
-  if (process.env.DEBUG) {
-    console.log('callSendAPI', request_body);
-  } else {
-    console.log('callSendAPI');
-  }
-  // Send the HTTP request to the Messenger Platform
-  request({
-    "uri": "https://graph.facebook.com/v2.6/me/messages",
-    "qs": { "access_token": Config.get('WHB_FB_PAGE_ACCESS_TOKEN') },
-    "method": "POST",
-    "json": request_body
-  }, (err, res, body) => {
-    if (!err) {
-      console.log('message sent!')
-      callback.onSuccess(true);
-    } else {
-      console.error("Unable to send message:" + err);
-      callback.onError(err);
-    }
-  }); 
-}
-
-function formatProcessedWebhookMessage(body) {
-  let text = '';
-  if (body.title) {
-    text = `*${body.title}*\n`;
-  }
-  if (body.text) {
-    text += body.text;
-  }
-  return {text};
-}
-
-function prettyHooksList(list) {
-  let result = '';
-  let resultList = [];
-  if (list) {
-    resultList = _.map(list, prettyHookItem);
-    result = resultList.join('\n');
-  }
-
-  return result;
-}
-
-function prettyHookIdsLastHitList(list) {
-  let result = '';
-  let resultList = [];
-  if (list) {
-    resultList = _.map(list, prettyHookIdLastHitItem);
-    result = resultList.join('\n');
-  }
-
-  return result;
-}
-
-function prettyHookItem(item, key) {
-  let result = '\n';
-  let createdOn = `\nCreated on ${new Date(item.createdOn).toString()}`;
-  let url = createWebhookUrl(key);
-  return result + url + createdOn;
-}
-
-function prettyHookIdLastHitItem(item, key) {
-  let result = '\n';
-  let lastHitOn = `\nLast hit on ${new Date(item.lastHitOn).toString()}`;
-  return result + key + lastHitOn;
-}
-
-function createWebhookUrl(hookId) {
-  return `${Config.get('WHB_APP_HOST')}webhook/${hookId}`;
-}
-
 function setupMessengerProfile() {
   let settingsBody = {
     'get_started':{
@@ -300,18 +215,13 @@ app.post('/webhook/:id', (req, res) => {
     console.log('/webhook/ hit', success, hookId);
     // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
 
-    callSendAPI(success.userId, formatProcessedWebhookMessage(body), {
-      onSuccess: (success) => {
+    fbMesControllerInstance.handleWebhookHit(success.userId, body)
+      .then(success => {
         res.status(200).send('OK');
-      },
-      onError: (error) => {
+      }).catch(error => {
+        console.error('webhookHit', error);
         res.status(500).send('ERROR');
-      }
-    }, {
-      'messaging_type': 'MESSAGE_TAG',
-      'tag': 'NON_PROMOTIONAL_SUBSCRIPTION'
-    });
-      
+      });      
   }).catch(err => {
     console.error('/webhook/:id error getting webhook', hookId, err );
     res.status(400).send({

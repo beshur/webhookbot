@@ -92,12 +92,26 @@ class FbMessengerController {
   }
 
   /*
-   * Handle all other texts (echo)
+   * Handle all other text commands (echo)
    */
   handleDefault(senderId, receivedText) {
     this.callSendAPI(senderId, {
       "text": `You sent the message: "${received_message.text}".`
     });
+  }
+
+  /*
+   * Handle actual webhook hit
+   */
+  handleWebhookHit(senderId, body) {
+    return this.callSendAPI(
+      senderId,
+      this.formatProcessedWebhookMessage(body),
+      {
+        'messaging_type': 'MESSAGE_TAG',
+        'tag': 'NON_PROMOTIONAL_SUBSCRIPTION'
+      }
+    )
   }
 
   _defaultFirebaseCatch(senderId, methodName, err) {
@@ -109,7 +123,7 @@ class FbMessengerController {
   }
 
   // Sends response messages via the Send API
-  callSendAPI(senderId, response, callback, meta) {
+  callSendAPI(senderId, response, meta) {
     // Construct the message body)
     let request_body = {
       "recipient": {
@@ -136,12 +150,10 @@ class FbMessengerController {
       }, (err, res, body) => {
         if (err) {
           console.error("Unable to send message:" + err);
-          // callback.onError(err);
           return reject(err);
         } else {
           console.log('message sent!')
-          // callback.onSuccess(true);
-          resolve();
+          return resolve();
         }
       }); 
     });
