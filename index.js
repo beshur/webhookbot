@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 1337;
 const LOCAL = fs.existsSync('LOCAL');
 
 const analyticsInstance = new Analytics(Config.get('WHB_GA_ID'));
-const firebaseInstance = new Firebase(Config, analyticsInstance);
+const firebaseInstance = new Firebase();
 const fbMesControllerInstance = new FbMessengerController({
   analytics: analyticsInstance,
   firebase: firebaseInstance,

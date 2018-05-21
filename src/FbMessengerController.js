@@ -80,6 +80,7 @@ class FbMessengerController {
         "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 
       }
       this.callSendAPI(senderId, response);
+      this.props.analytics.trackWebhookHit(senderId).catch();
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleStart', senderId));
   }
 
@@ -153,6 +154,7 @@ class FbMessengerController {
    * Handle actual webhook hit
    */
   handleWebhookHit(senderId, body) {
+    this.props.analytics.trackWebhookHit(senderId).catch();
     return this.callSendAPI(
       senderId,
       this.formatProcessedWebhookMessage(body),
@@ -212,8 +214,8 @@ class FbMessengerController {
     return /\/delete (-[A-Z_]\w+)/g;
   }
 
-  setupMessengerProfile() {
-    let settingsBody = {
+  get profileSettings() {
+    return {
       'get_started':{
         'payload':'/help'
       },
@@ -243,11 +245,13 @@ class FbMessengerController {
         }]
       }]
     }
+  }
+  setupMessengerProfile() {
     request({
       'uri': this.FB_PROFILE,
       'qs': { 'access_token': this.props.config.get('WHB_FB_PAGE_ACCESS_TOKEN') },
       'method': 'POST',
-      'json': settingsBody
+      'json': this.profileSettings
     }, (err, res, body) => {
       if (!err) {
         console.log('setupMessengerProfile OK!')
