@@ -315,10 +315,7 @@ class FbMessengerController {
   }
 
   formatProcessedWebhookMessage(label, body) {
-    let text = '';
-    if (label) {
-      text += `@${label}:\n`;
-    }
+    let text = this.prettyHookLabel(label);
     if (body.title) {
       text += `*${body.title}*\n`;
     }
@@ -343,7 +340,7 @@ class FbMessengerController {
     let result = '';
     let resultList = [];
     if (list) {
-      resultList = _.map(list, this.prettyHookIdLastHitItem);
+      resultList = _.map(list, this.prettyHookIdLastHitItem.bind(this));
       result = resultList.join('\n');
     }
 
@@ -351,7 +348,7 @@ class FbMessengerController {
   }
 
   prettyHookLabel(label) {
-    (label) ? `@${label}\n` : '';
+    return (!!label) ? `@${label}\n` : '';
   }
 
   prettyHookItem(item, key) {
