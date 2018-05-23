@@ -338,14 +338,20 @@ class FbMessengerController {
   }
 
   prettyHookItem(item, key) {
-    let result = `\n\n${item.label || ''}`;
+    let result = `\n`;
+    if (item.label) {
+      result += `**${item.label}**\n`;
+    }
+    let url = `{this.createWebhookUrl(key)}`;
     let createdOn = `\nCreated on ${new Date(item.createdOn).toString()}`;
-    let url = this.createWebhookUrl(key);
     return result + url + createdOn;
   }
 
   prettyHookIdLastHitItem(item, key) {
-    let result = '\n';
+    let result = `\n`;
+    if (item.label) {
+      result += `**${item.label}**\n`;
+    }
     let lastHitOn = `\nLast hit on ${new Date(item.lastHitOn).toString()}`;
     return result + key + lastHitOn;
   }
