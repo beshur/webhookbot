@@ -41,11 +41,11 @@ class FbMessengerController {
         this.handleStart(senderId);
         break;
       case '/create':
-        let label = (commandArgs.length) ? commandArgs[0] : null;
+        let label = (commandArgs) ? commandArgs[0] : '';
         this.handleCreate(senderId, label);
         break;
       case '/update':
-        let args = (commandArgs.length) ? commandArgs : null;
+        let args = (commandArgs) ? commandArgs : [];
         this.handleUpdate(senderId, args);
         break;
       case '/delete':
@@ -109,7 +109,7 @@ class FbMessengerController {
   /*
    * Handle /update command
    * @param string senderId
-   * @param string label
+   * @param array args
    */
   handleUpdate(senderId, args) {
     let response;
@@ -304,7 +304,7 @@ class FbMessengerController {
   formatProcessedWebhookMessage(label, body) {
     let text = '';
     if (label) {
-      text += `**${label}**:\n`;
+      text += `@${label}:\n`;
     }
     if (body.title) {
       text += `*${body.title}*\n`;
@@ -340,9 +340,9 @@ class FbMessengerController {
   prettyHookItem(item, key) {
     let result = `\n`;
     if (item.label) {
-      result += `**${item.label}**\n`;
+      result += `*${item.label}*\n`;
     }
-    let url = `{this.createWebhookUrl(key)}`;
+    let url = this.createWebhookUrl(key);
     let createdOn = `\nCreated on ${new Date(item.createdOn).toString()}`;
     return result + url + createdOn;
   }
@@ -350,7 +350,7 @@ class FbMessengerController {
   prettyHookIdLastHitItem(item, key) {
     let result = `\n`;
     if (item.label) {
-      result += `**${item.label}**\n`;
+      result += `*${item.label}*\n`;
     }
     let lastHitOn = `\nLast hit on ${new Date(item.lastHitOn).toString()}`;
     return result + key + lastHitOn;
