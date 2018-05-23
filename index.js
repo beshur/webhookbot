@@ -111,7 +111,7 @@ app.post('/webhook/:id', (req, res) => {
     console.log('/webhook/ hit', success, hookId);
     // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
 
-    fbMesControllerInstance.handleWebhookHit(success.userId, success.label, body)
+    fbMesControllerInstance.handleWebhookHit(hookId, success.userId, success.label, body)
       .then(success => {
         res.status(200).send('OK');
       }).catch(error => {

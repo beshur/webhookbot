@@ -205,11 +205,11 @@ class FbMessengerController {
   /*
    * Handle actual webhook hit
    */
-  handleWebhookHit(senderId, label, body) {
+  handleWebhookHit(hookId, senderId, label, body) {
     this.props.analytics.trackWebhookHit(senderId).catch();
     return this.callSendAPI(
       senderId,
-      this.formatProcessedWebhookMessage(label, body),
+      this.formatProcessedWebhookMessage(hookId, label, body),
       {
         'messaging_type': 'MESSAGE_TAG',
         'tag': 'NON_PROMOTIONAL_SUBSCRIPTION'
@@ -314,8 +314,11 @@ class FbMessengerController {
 
   }
 
-  formatProcessedWebhookMessage(label, body) {
+  formatProcessedWebhookMessage(hookId, label, body) {
     let text = this.prettyHookLabel(label);
+    if (!text) {
+      text = this.prettyHookLabel(hookId);
+    }
     if (body.title) {
       text += `*${body.title}*\n`;
     }
