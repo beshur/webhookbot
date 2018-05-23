@@ -2,7 +2,7 @@
 const _ = require('underscore'),
   request = require('request'),
   stringArgv = require('string-argv'),
-  {HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
+  {HELP_START, HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
 
 /*
  * Facebook Messenger Controller
@@ -31,19 +31,18 @@ class FbMessengerController {
       });
     }
     let receivedText = message.text;
-    const receivedDeleteWithId = this.deleteWebhookIdRegexp.test(receivedText);
-
     let commandText = stringArgv(receivedText);
     let command = commandText.shift();
-    let commandArgs;
-    if (commandText.length) {
-      commandArgs = commandText;
-    }
+    let commandArgs = (commandText.length) ? commandText : null;
     console.log('command, commandArgs', command, commandArgs);
 
     switch(command) {
       case '/start':
         this.handleStart(senderId);
+        break;
+      case '/create':
+        let label = (commandArgs.length) ? commandArgs[0] : null;
+        this.handleCreate(senderId, label);
         break;
       case '/delete':
         if (commandArgs) {
@@ -80,14 +79,25 @@ class FbMessengerController {
    * @param string message
    */
   handleStart(senderId, message) {
+    this.callSendAPI(senderId, {
+      "text": HELP_START 
+    });
+  }
+
+  /*
+   * Handle /create command
+   * @param string senderId
+   * @param string label
+   */
+  handleCreate(senderId, label) {
     let response;
-    this.props.firebase.createWebhook(senderId).then((success) => {
+    this.props.firebase.createWebhook(senderId, label).then((success) => {
       let clientHookUrl = this.createWebhookUrl(success.key);
       response = {
         "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 
       }
       this.callSendAPI(senderId, response);
-      this.props.analytics.trackWebhookHit(senderId).catch();
+      this.props.analytics.trackNewWebhook(senderId).catch();
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleStart', senderId));
   }
 
@@ -109,9 +119,8 @@ class FbMessengerController {
    * Handle /delete <id> command
    * @param string senderId
    */
-  handleDeleteWithId(senderId, receivedText, id) {
+  handleDeleteWithId(senderId, id) {
     let response;
-    let webhookTest = this.deleteWebhookIdRegexp.exec(receivedText);
     this.props.firebase.deleteWebhook(id, senderId).then((success) => {
       response = {
         "text": `Successfully deleted ${id}` 
@@ -153,11 +162,11 @@ class FbMessengerController {
   /*
    * Handle actual webhook hit
    */
-  handleWebhookHit(senderId, body) {
+  handleWebhookHit(senderId, label, body) {
     this.props.analytics.trackWebhookHit(senderId).catch();
     return this.callSendAPI(
       senderId,
-      this.formatProcessedWebhookMessage(body),
+      this.formatProcessedWebhookMessage(label, body),
       {
         'messaging_type': 'MESSAGE_TAG',
         'tag': 'NON_PROMOTIONAL_SUBSCRIPTION'
@@ -262,10 +271,13 @@ class FbMessengerController {
 
   }
 
-  formatProcessedWebhookMessage(body) {
+  formatProcessedWebhookMessage(label, body) {
     let text = '';
+    if (label) {
+      text += `**${label}**:\n`;
+    }
     if (body.title) {
-      text = `*${body.title}*\n`;
+      text += `*${body.title}*\n`;
     }
     if (body.text) {
       text += body.text;

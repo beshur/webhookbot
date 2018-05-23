@@ -4,6 +4,7 @@ const _ = require('underscore');
 const Config = require('./Config');
 
 const webhookSchema = {
+  'label': '',
   'userId': '',
   'createdOn': '',
   'lastHitOn': ''
@@ -45,15 +46,16 @@ let firebaseApp = function() {
     console.log(this.LOG, 'handleData', this.webhooks);
   }
 
-  this.generateNewWebhook = function(userId) {
+  this.generateNewWebhook = function(userId, label) {
     return _.defaults({
       userId: userId,
+      label: label,
       createdOn: Date.now()
     }, webhookSchema);
   }
 
-  this.createWebhook = (userId) => {
-    return this.webhooksRef.push(this.generateNewWebhook(userId));
+  this.createWebhook = (userId, label) => {
+    return this.webhooksRef.push(this.generateNewWebhook(userId, label));
   }
 
   this.webhookHit = (webhookId) => {
