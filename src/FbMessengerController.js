@@ -115,12 +115,26 @@ class FbMessengerController {
     let response;
     let id = args[0];
     let label = args[1];
-    if (!id) {
-      return this.callSendAPI(senderId, {
-        "text": HELP_UPDATE
-      });
+    if (id) {
+      return this.handleUpdateParams(senderId, id, label);
     }
+    // no id
+    this.props.firebase.listWebhooks(senderId).then((list) => {
+      let hooksList = this.prettyHookIdsLastHitList(list);
+      response = {
+        "text": `Your webhooks:${hooksList}\n\nSend \`/update <Webhook id> <New label>\` to update the label` 
+      }
+      this.callSendAPI(senderId, response);
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleUpdateParams', senderId));
+  }
 
+  /*
+   * Handle /update with params command
+   * @param string senderId
+   * @param string id
+   * @param string label
+   */
+  handleUpdateParams(senderId, id, label) {
     this.props.firebase.updateWebhook(senderId, id, label).then((success) => {
       let clientHookUrl = this.createWebhookUrl(success.key);
       response = {
@@ -130,7 +144,6 @@ class FbMessengerController {
       this.props.analytics.trackUpdateWebhook(senderId).catch();
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleUpdate', senderId));
   }
-
   /*
    * Handle /delete command
    * @param string senderId
