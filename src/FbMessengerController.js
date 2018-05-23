@@ -1,6 +1,7 @@
 'use strict';
 const _ = require('underscore'),
   request = require('request'),
+  stringArgv = require('string-argv'),
   {HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
 
 /*
@@ -32,18 +33,24 @@ class FbMessengerController {
     let receivedText = message.text;
     const receivedDeleteWithId = this.deleteWebhookIdRegexp.test(receivedText);
 
-    // on top of switch because it's hard to put regex in this switch
-    if (receivedDeleteWithId) {
-      this.handleDeleteWithId(senderId, receivedText);
-      return;
+    let commandText = stringArgv(receivedText);
+    let command = commandText.shift();
+    let commandArgs;
+    if (commandText.length) {
+      commandArgs = commandText;
     }
+    console.log('command, commandArgs', command, commandArgs);
 
-    switch(receivedText) {
+    switch(command) {
       case '/start':
         this.handleStart(senderId);
         break;
       case '/delete':
-        this.handleDelete(senderId);
+        if (commandArgs) {
+          this.handleDeleteWithId(senderId, receivedText, commandArgs[0]);
+        } else {
+          this.handleDelete(senderId);
+        }
         break;
        case '/list':
         this.handleList(senderId);
@@ -102,19 +109,12 @@ class FbMessengerController {
    * Handle /delete <id> command
    * @param string senderId
    */
-  handleDeleteWithId(senderId, receivedText) {
+  handleDeleteWithId(senderId, receivedText, id) {
     let response;
     let webhookTest = this.deleteWebhookIdRegexp.exec(receivedText);
-    if (webhookTest.length < 2) {
+    this.props.firebase.deleteWebhook(id, senderId).then((success) => {
       response = {
-        "text": `Could not understand the webhook id. Please try again.` 
-      }
-      return this.callSendAPI(senderId, response);
-    }
-    const webhookId = webhookTest[1];
-    this.props.firebase.deleteWebhook(webhookId, senderId).then((success) => {
-      response = {
-        "text": `Successfully deleted ${webhookId}` 
+        "text": `Successfully deleted ${id}` 
       }
       this.callSendAPI(senderId, response);
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleDeleteWithId', senderId));
