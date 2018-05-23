@@ -4,6 +4,7 @@ const _ = require('underscore');
 const Config = require('./Config');
 
 const webhookSchema = {
+  'label': '',
   'userId': '',
   'createdOn': '',
   'lastHitOn': ''
@@ -45,15 +46,53 @@ let firebaseApp = function() {
     console.log(this.LOG, 'handleData', this.webhooks);
   }
 
-  this.generateNewWebhook = function(userId) {
+  this.generateNewWebhook = function(userId, label) {
     return _.defaults({
       userId: userId,
+      label: label,
       createdOn: Date.now()
     }, webhookSchema);
   }
 
-  this.createWebhook = (userId) => {
-    return this.webhooksRef.push(this.generateNewWebhook(userId));
+  this.createWebhook = (userId, label) => {
+    return this.webhooksRef.push(this.generateNewWebhook(userId, label));
+  }
+
+  this.toUpdate = (senderId, webhookId) => {
+    return new Promise((resolve, reject) => {
+      this.getWebhook(webhookId)
+        .then(webhookObj => {
+          if (webhookObj.userId !== senderId) {
+            const errorText = `401 Unauthorized. Trying to update someone else webhook id: ${webhookId} sender: ${senderId}`;
+            console.warn(this.LOG, 'toUpdate', errorText);
+            reject(errorText);
+          } else if (webhookObj === null) {
+            reject('WEBHOOK:NULL');
+          } else {
+            resolve(webhookObj);
+          }
+        }).catch(reject);
+    });
+  }
+
+  this.updateWebhook = (userId, webhookId, label) => {
+    let updates = {};
+    return new Promise((resolve, reject) => {
+      this.toUpdate(userId, webhookId).then(webhookObj => {
+        updates[webhooksRef + webhookId] = _.extend(webhookSchema, webhookObj, {
+          label: label
+        });
+
+        return this.database.ref().update(updates)
+          .then(success => {
+            resolve(webhookObj);
+          })
+          .catch(reject);
+      }).catch(err => {
+        console.error(this.LOG, 'updateWebhook -> toUpdate err', err);
+        reject(err);
+      });
+    });
   }
 
   this.webhookHit = (webhookId) => {
@@ -75,7 +114,7 @@ let firebaseApp = function() {
           })
           .catch(reject);
       }).catch(err => {
-        console.err(this.LOG, 'webhookHit -> getWebhook err', err);
+        console.error(this.LOG, 'webhookHit -> getWebhook err', err);
         reject(err);
       });
     });

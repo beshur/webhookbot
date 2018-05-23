@@ -1,7 +1,8 @@
 'use strict';
 const _ = require('underscore'),
   request = require('request'),
-  {HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
+  stringArgv = require('string-argv'),
+  {HELP_START, HELP_UPDATE, HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
 
 /*
  * Facebook Messenger Controller
@@ -30,20 +31,29 @@ class FbMessengerController {
       });
     }
     let receivedText = message.text;
-    const receivedDeleteWithId = this.deleteWebhookIdRegexp.test(receivedText);
+    let commandText = stringArgv(receivedText);
+    let command = commandText.shift();
+    let commandArgs = (commandText.length) ? commandText : null;
+    console.log('command, commandArgs', command, commandArgs);
 
-    // on top of switch because it's hard to put regex in this switch
-    if (receivedDeleteWithId) {
-      this.handleDeleteWithId(senderId, receivedText);
-      return;
-    }
-
-    switch(receivedText) {
+    switch(command) {
       case '/start':
         this.handleStart(senderId);
         break;
+      case '/create':
+        let label = (commandArgs) ? commandArgs[0] : '';
+        this.handleCreate(senderId, label);
+        break;
+      case '/update':
+        let args = (commandArgs) ? commandArgs : [];
+        this.handleUpdate(senderId, args);
+        break;
       case '/delete':
-        this.handleDelete(senderId);
+        if (commandArgs) {
+          this.handleDeleteWithId(senderId, receivedText, commandArgs[0]);
+        } else {
+          this.handleDelete(senderId);
+        }
         break;
        case '/list':
         this.handleList(senderId);
@@ -73,17 +83,67 @@ class FbMessengerController {
    * @param string message
    */
   handleStart(senderId, message) {
+    this.callSendAPI(senderId, {
+      "text": HELP_START 
+    });
+  }
+
+  /*
+   * Handle /create command
+   * @param string senderId
+   * @param string label
+   */
+  handleCreate(senderId, label) {
     let response;
-    this.props.firebase.createWebhook(senderId).then((success) => {
+    this.props.firebase.createWebhook(senderId, label).then((success) => {
       let clientHookUrl = this.createWebhookUrl(success.key);
       response = {
         "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 
       }
       this.callSendAPI(senderId, response);
-      this.props.analytics.trackWebhookHit(senderId).catch();
-    }).catch(this._defaultFirebaseCatch.bind(this, 'handleStart', senderId));
+      this.props.analytics.trackNewWebhook(senderId).catch();
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleCreate', senderId));
   }
 
+
+  /*
+   * Handle /update command
+   * @param string senderId
+   * @param array args
+   */
+  handleUpdate(senderId, args) {
+    let response;
+    let id = args[0];
+    let label = args[1];
+    if (id) {
+      return this.handleUpdateParams(senderId, id, label);
+    }
+    // no id
+    this.props.firebase.listWebhooks(senderId).then((list) => {
+      let hooksList = this.prettyHookIdsLastHitList(list);
+      response = {
+        "text": `Your webhooks:${hooksList}\n\nSend \`/update <Webhook id> <New label>\` to update the label` 
+      }
+      this.callSendAPI(senderId, response);
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleUpdateParams', senderId));
+  }
+
+  /*
+   * Handle /update with params command
+   * @param string senderId
+   * @param string id
+   * @param string label
+   */
+  handleUpdateParams(senderId, id, label) {
+    this.props.firebase.updateWebhook(senderId, id, label).then((success) => {
+      let clientHookUrl = this.createWebhookUrl(success.key);
+      response = {
+        "text": `${clientHookUrl}\nUpdated label to ${label}\n`
+      }
+      this.callSendAPI(senderId, response);
+      this.props.analytics.trackUpdateWebhook(senderId).catch();
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleUpdate', senderId));
+  }
   /*
    * Handle /delete command
    * @param string senderId
@@ -102,19 +162,11 @@ class FbMessengerController {
    * Handle /delete <id> command
    * @param string senderId
    */
-  handleDeleteWithId(senderId, receivedText) {
+  handleDeleteWithId(senderId, id) {
     let response;
-    let webhookTest = this.deleteWebhookIdRegexp.exec(receivedText);
-    if (webhookTest.length < 2) {
+    this.props.firebase.deleteWebhook(id, senderId).then((success) => {
       response = {
-        "text": `Could not understand the webhook id. Please try again.` 
-      }
-      return this.callSendAPI(senderId, response);
-    }
-    const webhookId = webhookTest[1];
-    this.props.firebase.deleteWebhook(webhookId, senderId).then((success) => {
-      response = {
-        "text": `Successfully deleted ${webhookId}` 
+        "text": `Successfully deleted ${id}` 
       }
       this.callSendAPI(senderId, response);
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleDeleteWithId', senderId));
@@ -153,11 +205,11 @@ class FbMessengerController {
   /*
    * Handle actual webhook hit
    */
-  handleWebhookHit(senderId, body) {
+  handleWebhookHit(senderId, label, body) {
     this.props.analytics.trackWebhookHit(senderId).catch();
     return this.callSendAPI(
       senderId,
-      this.formatProcessedWebhookMessage(body),
+      this.formatProcessedWebhookMessage(label, body),
       {
         'messaging_type': 'MESSAGE_TAG',
         'tag': 'NON_PROMOTIONAL_SUBSCRIPTION'
@@ -262,10 +314,10 @@ class FbMessengerController {
 
   }
 
-  formatProcessedWebhookMessage(body) {
-    let text = '';
+  formatProcessedWebhookMessage(label, body) {
+    let text = this.prettyHookLabel(label);
     if (body.title) {
-      text = `*${body.title}*\n`;
+      text += `*${body.title}*\n`;
     }
     if (body.text) {
       text += body.text;
@@ -288,22 +340,26 @@ class FbMessengerController {
     let result = '';
     let resultList = [];
     if (list) {
-      resultList = _.map(list, this.prettyHookIdLastHitItem);
+      resultList = _.map(list, this.prettyHookIdLastHitItem.bind(this));
       result = resultList.join('\n');
     }
 
     return result;
   }
 
+  prettyHookLabel(label) {
+    return (!!label) ? `@${label}\n` : '';
+  }
+
   prettyHookItem(item, key) {
-    let result = '\n';
-    let createdOn = `\nCreated on ${new Date(item.createdOn).toString()}`;
+    let result = '\n' + this.prettyHookLabel(item.label);
     let url = this.createWebhookUrl(key);
+    let createdOn = `\nCreated on ${new Date(item.createdOn).toString()}`;
     return result + url + createdOn;
   }
 
   prettyHookIdLastHitItem(item, key) {
-    let result = '\n';
+    let result = '\n' + this.prettyHookLabel(item.label);
     let lastHitOn = `\nLast hit on ${new Date(item.lastHitOn).toString()}`;
     return result + key + lastHitOn;
   }
