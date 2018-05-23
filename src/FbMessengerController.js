@@ -337,7 +337,7 @@ class FbMessengerController {
     return result;
   }
 
-  get prettyHookLabel(label) {
+  prettyHookLabel(label) {
     (label) ? `@${label}\n` : '';
   }
 
