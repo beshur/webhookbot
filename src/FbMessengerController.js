@@ -2,7 +2,7 @@
 const _ = require('underscore'),
   request = require('request'),
   stringArgv = require('string-argv'),
-  {HELP_START, HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
+  {HELP_START, HELP_UPDATE, HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
 
 /*
  * Facebook Messenger Controller
@@ -43,6 +43,10 @@ class FbMessengerController {
       case '/create':
         let label = (commandArgs.length) ? commandArgs[0] : null;
         this.handleCreate(senderId, label);
+        break;
+      case '/update':
+        let args = (commandArgs.length) ? commandArgs : null;
+        this.handleUpdate(senderId, args);
         break;
       case '/delete':
         if (commandArgs) {
@@ -98,7 +102,33 @@ class FbMessengerController {
       }
       this.callSendAPI(senderId, response);
       this.props.analytics.trackNewWebhook(senderId).catch();
-    }).catch(this._defaultFirebaseCatch.bind(this, 'handleStart', senderId));
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleCreate', senderId));
+  }
+
+
+  /*
+   * Handle /update command
+   * @param string senderId
+   * @param string label
+   */
+  handleUpdate(senderId, args) {
+    let response;
+    let id = args[0];
+    let label = args[1];
+    if (!id) {
+      return this.callSendAPI(senderId, {
+        "text": HELP_UPDATE
+      });
+    }
+
+    this.props.firebase.updateWebhook(senderId, id, label).then((success) => {
+      let clientHookUrl = this.createWebhookUrl(success.key);
+      response = {
+        "text": `${clientHookUrl}\nUpdated label to ${label}\n`
+      }
+      this.callSendAPI(senderId, response);
+      this.props.analytics.trackUpdateWebhook(senderId).catch();
+    }).catch(this._defaultFirebaseCatch.bind(this, 'handleUpdate', senderId));
   }
 
   /*
@@ -308,7 +338,7 @@ class FbMessengerController {
   }
 
   prettyHookItem(item, key) {
-    let result = '\n';
+    let result = `\n\n${item.label || ''}`;
     let createdOn = `\nCreated on ${new Date(item.createdOn).toString()}`;
     let url = this.createWebhookUrl(key);
     return result + url + createdOn;

@@ -26,6 +26,15 @@ function Analytics(GA_ID) {
     return this.collect(event);
   }
 
+  this.trackUpdateWebhook = (userId) => {
+    const event = _.defaults({
+      cid: userId,
+      ea: 'updated'
+    }, this.eventTpl);
+
+    return this.collect(event);
+  }
+
   this.trackWebhookHit = (userId) => {
     const event = _.defaults({
       cid: userId,
