@@ -89,7 +89,7 @@ class AbstractCommandController {
    */
   handleCreate(senderId, label) {
     let response;
-    this.props.firebase.createWebhook(senderId, label).then((success) => {
+    this.props.firebase.createWebhook(senderId, label, this.webhookType).then((success) => {
       let clientHookUrl = this.createWebhookUrl(success.key);
       response = {
         "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 

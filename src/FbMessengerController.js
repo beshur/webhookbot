@@ -3,6 +3,7 @@ const _ = require('underscore'),
   request = require('request'),
   stringArgv = require('string-argv'),
   AbstractCommandController = require('./AbstractCommandController'),
+  WebhookType = require('./WebhookTypes').Facebook,
   {HELP_START, HELP_UPDATE, HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
 
 /*
@@ -14,6 +15,7 @@ class FbMessengerController extends AbstractCommandController {
     super(props);
     this.props = props;
     this.LOG = 'FbMessengerController';
+    this.webhookType = WebhookType;
   }
 
   handleMessage(senderId, message) {

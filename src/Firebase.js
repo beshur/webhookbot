@@ -2,13 +2,14 @@
 const firebase = require('firebase');
 const _ = require('underscore');
 const Config = require('./Config');
+const WebhookTypes = require('./WebhookTypes');
 
 const webhookSchema = {
   'label': '',
   'userId': '',
   'createdOn': '',
   'lastHitOn': '',
-  'type': 'fb'
+  'type': WebhookTypes.Facebook
 }
 
 const webhooksRef = 'webhooks/';
@@ -47,16 +48,17 @@ let firebaseApp = function() {
     console.log(this.LOG, 'handleData', this.webhooks);
   }
 
-  this.generateNewWebhook = function(userId, label) {
+  this.generateNewWebhook = function(userId, label, type) {
     return _.defaults({
       userId: userId,
       label: label,
+      type: type,
       createdOn: Date.now()
     }, webhookSchema);
   }
 
-  this.createWebhook = (userId, label) => {
-    return this.webhooksRef.push(this.generateNewWebhook(userId, label));
+  this.createWebhook = (userId, label, type) => {
+    return this.webhooksRef.push(this.generateNewWebhook(userId, label, type));
   }
 
   this.toUpdate = (senderId, webhookId) => {

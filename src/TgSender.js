@@ -3,10 +3,10 @@ const AbstractSender = require('./AbstractSender');
 /**
  * Facebook Messenger Sender Class
  */
-class FbSender extends AbstractSender {
+class TgSender extends AbstractSender {
   constructor(props) {
     super(props);
-    this.LOG = 'FbSender';
+    this.LOG = 'TgSender';
 
     this.TG_URL = 'https://api.telegram.org/bot' + this.props.TG_TOKEN;
 
@@ -14,17 +14,15 @@ class FbSender extends AbstractSender {
   }
 
   onInit() {
-    this.setupTgWebhook();
     if (!this.props.isLocal) {
+      this.setupTgWebhook();
     }
   }
 
   setupBody(senderId, response, meta) {
     let request_body = {
-      "recipient": {
-        "id": senderId
-      },
-      "message": response
+      "chat_id": senderId,
+      "text": response.text
     }
     if (meta) {
       request_body = _.extend(request_body, meta);
@@ -34,8 +32,7 @@ class FbSender extends AbstractSender {
 
   setupRequest(request_body) {
     return {
-      "uri": this.FB_MESSAGES,
-      "qs": { "access_token": this.props.FB_TOKEN },
+      "uri": this.TG_URL + '/sendMessage',
       "method": "POST",
       "json": request_body
     }
@@ -78,4 +75,4 @@ class FbSender extends AbstractSender {
   }
 }
 
-module.exports = FbSender;
+module.exports = TgSender;

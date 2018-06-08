@@ -8,6 +8,7 @@ const
   Analytics = require('./src/Analytics'),
   Config = require('./src/Config'),
   TgSender = require('./src/TgSender'),
+  TgComController = require('./src/TgCommandController'),
   FbSender = require('./src/FbSender'),
   FbMessengerController = require('./src/FbMessengerController'),
   request = require('request'),
@@ -20,11 +21,18 @@ const LOCAL = fs.existsSync('LOCAL');
 
 const analyticsInstance = new Analytics(Config.get('WHB_GA_ID'));
 const firebaseInstance = new Firebase();
-const TgSenderInstance = new TgSender({
+const tgSenderInstance = new TgSender({
   HOST: Config.get('WHB_APP_HOST'),
   TG_TOKEN: Config.get('WHB_TG_TOKEN'),
   isLocal: LOCAL
 });
+const tgComControllerInstance = new TgComController({
+  analytics: analyticsInstance,
+  firebase: firebaseInstance,
+  config: Config,
+  sender: tgSenderInstance,
+});
+
 const FbSenderInstance = new FbSender({
   FB_TOKEN: Config.get('WHB_FB_PAGE_ACCESS_TOKEN'),
   isLocal: LOCAL
@@ -152,12 +160,16 @@ app.post('/tg/:token', (req, res) => {
  
   let body = req.body;
   let token = req.params.token;
-  console.log('TG incoming token:', token, 'ok: ', token === Config.get('WHB_TG_TOKEN'));
   if (token !== Config.get('WHB_TG_TOKEN')) {
+    console.warn('TG incoming WRONG TOKEN', token);
     return res.status(403).send('WRONG TOKEN');
   }
 
   console.log('TG incoming:', body);
+  let type = 'message';
+  if (body[type]) {
+    tgComControllerInstance.handleMessage(body[type].chat.id, body[type]);
+  }
 
   res.send('EVENT_RECEIVED');
 
