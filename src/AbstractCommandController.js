@@ -16,7 +16,6 @@ class AbstractCommandController {
 
   handleMessage(senderId, message) {
     // #TODO: FSM
-    console.log(this.LOG, 'handleMessage is postback', typeof message.payload !== 'undefined');
 
     // Check if the message contains text
     if (!message.text) {
@@ -28,7 +27,7 @@ class AbstractCommandController {
     let commandText = stringArgv(receivedText);
     let command = commandText.shift();
     let commandArgs = (commandText.length) ? commandText : null;
-    console.log('command, commandArgs', command, commandArgs);
+    console.log(this.LOG, 'command, commandArgs', command, commandArgs);
 
     switch(command) {
       case '/start':
@@ -60,15 +59,6 @@ class AbstractCommandController {
         this.handleDefault(senderId, receivedText);
         break;
     }
-  }
-
-  // Handles messaging_postbacks events
-  handlePostback(senderId, receivedPostback) {
-    console.log(this.LOG, 'handlePostback');
-    // it's a hack
-    this.handleMessage(senderId, _.extend(receivedPostback, {
-      text: receivedPostback.payload
-    }));
   }
 
   /*
