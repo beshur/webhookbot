@@ -5,23 +5,13 @@ const _ = require('underscore'),
   {HELP_START, HELP_UPDATE, HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
 
 /*
- * Facebook Messenger Controller
- * Handles Facebook chat events / messages
+ * Abstract Command Controller
+ * Generic commands handler that should be reused for different platforms
  */
 class AbstractCommandController {
   constructor(props) {
     this.props = props;
     this.LOG = 'AbstractCommandController';
-    // this.FB_MESSAGES = 'https://graph.facebook.com/v2.6/me/messages';
-    // this.FB_PROFILE = 'https://graph.facebook.com/v2.6/me/messenger_profile';
-
-    if (!props.isLocal) {
-      this.setupMessengerProfile();
-    }
-  }
-
-  setupController(props) {
-    this.setup = props;
   }
 
   handleMessage(senderId, message) {
@@ -228,44 +218,11 @@ class AbstractCommandController {
 
   // Sends response messages via the Send API
   callSendAPI(senderId, response, meta) {
-    throw new Error('callSendAPI - Not implemented');
+    this.props.sender.callSendAPI(...arguments);
   }
 
   get deleteWebhookIdRegexp() {
     return /\/delete (-[A-Z_]\w+)/g;
-  }
-
-  get profileSettings() {
-    return {
-      'get_started':{
-        'payload':'/help'
-      },
-      'greeting': [{
-        'locale':'default',
-        'text':`Hi!
-        \nWebhook Bot can create the webhook URL that you can use to forward messages to yourself.
-        \nType /help to display the commands.`
-      }],
-      'persistent_menu':[{
-        'locale':'default',
-        'composer_input_disabled': false,
-        'call_to_actions':[{
-          'title':'Get started',
-          'type':'postback',
-          'payload':'/help'
-        },
-        {
-          'title':'Create Webhook',
-          'type':'postback',
-          'payload':'/start'
-        },
-        {
-          'type':'postback',
-          'title':'My Webhooks',
-          'payload':'/list'
-        }]
-      }]
-    }
   }
 
   formatProcessedWebhookMessage(hookId, label, body) {
