@@ -21,6 +21,8 @@ export WHB_FIREBASE_projectId=
 export WHB_FIREBASE_storageBucket=
 export WHB_FIREBASE_messagingSenderId=
 export WHB_INDEX_REDIRECT=
+
+export WHB_TG_TOKEN=
 ```
 
 

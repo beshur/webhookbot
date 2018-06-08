@@ -7,7 +7,8 @@ const webhookSchema = {
   'label': '',
   'userId': '',
   'createdOn': '',
-  'lastHitOn': ''
+  'lastHitOn': '',
+  'type': 'fb'
 }
 
 const webhooksRef = 'webhooks/';
