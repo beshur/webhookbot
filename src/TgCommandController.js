@@ -13,17 +13,6 @@ class TgCommandController extends AbstractCommandController {
     this.LOG = 'TgCommandController';
     this.webhookType = WebhookType;
   }
-
-  /*
-   * Handle actual webhook hit
-   */
-  handleWebhookHit(hookId, senderId, label, body) {
-    this.props.analytics.trackWebhookHit(senderId).catch();
-    return this.callSendAPI(
-      senderId,
-      this.formatProcessedWebhookMessage(hookId, label, body)
-    )
-  }
 }
 
 module.exports = TgCommandController;

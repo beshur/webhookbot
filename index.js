@@ -11,6 +11,7 @@ const
   TgComController = require('./src/TgCommandController'),
   FbSender = require('./src/FbSender'),
   FbMessengerController = require('./src/FbMessengerController'),
+  WebhookTypes = require('./src/WebhookTypes'),
   request = require('request'),
   fs = require('fs'),
   _ = require('underscore'),
@@ -187,8 +188,27 @@ app.post('/webhook/:id', (req, res) => {
   firebaseInstance.webhookHit(hookId).then((success) => {
     console.log('/webhook/ hit', success, hookId);
     // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
+    let handler;
+    switch(success.type) {
+      case WebhookTypes.Facebook:
+        handler = fbMesControllerInstance;
+        break;
 
-    fbMesControllerInstance.handleWebhookHit(hookId, success.userId, success.label, body)
+      case WebhookTypes.Telegram:
+        handler = tgComControllerInstance;
+        break;
+      default:
+        handler = null;
+        break;
+    }
+
+    if (!handler) {
+      console.error('UNKWONW WEBHOOK TYPE', success);
+      res.status(500);
+      return;
+    }
+    
+    handler.handleWebhookHit(hookId, success.userId, success.label, body)
       .then(success => {
         res.status(200).send('OK');
       }).catch(error => {

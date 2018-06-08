@@ -218,7 +218,7 @@ class AbstractCommandController {
 
   // Sends response messages via the Send API
   callSendAPI(senderId, response, meta) {
-    this.props.sender.callSendAPI(...arguments);
+    return this.props.sender.callSendAPI(...arguments);
   }
 
   get deleteWebhookIdRegexp() {
