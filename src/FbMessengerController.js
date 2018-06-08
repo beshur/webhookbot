@@ -50,7 +50,7 @@ class FbMessengerController {
         break;
       case '/delete':
         if (commandArgs) {
-          this.handleDeleteWithId(senderId, receivedText, commandArgs[0]);
+          this.handleDeleteWithId(senderId, commandArgs[0]);
         } else {
           this.handleDelete(senderId);
         }
@@ -161,6 +161,7 @@ class FbMessengerController {
   /*
    * Handle /delete <id> command
    * @param string senderId
+   * @param string id - webhook id
    */
   handleDeleteWithId(senderId, id) {
     let response;
