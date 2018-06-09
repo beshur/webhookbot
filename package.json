@@ -1,14 +1,18 @@
 {
   "name": "webhookbot-server",
   "version": "0.2.1",
-  "description": "",
+  "description": "Runs a webhook commands processor, with adapters for some messengers",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "start-debug": "export DEBUG=true; node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "repository" : { "type" : "git",
+    "url" : "https://github.com/beshur/webhookbot.git"
+  },
+
+  "author": "Alex Buznik",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.18.3",
