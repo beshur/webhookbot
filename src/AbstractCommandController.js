@@ -259,7 +259,7 @@ class AbstractCommandController {
   }
 
   prettyHookLabel(label) {
-    return (!!label) ? `@${label}\n` : '';
+    return (!!label) ? `⌘${label}\n` : '';
   }
 
   prettyHookItem(item, key) {
