@@ -1,6 +1,6 @@
 'use strict';
 
-const request = require('request');
+const request = require('request-promise-native');
 
 /**
  * Abstract Sender Class
@@ -39,15 +39,14 @@ class AbstractSender {
   predefinedCallSendAPI(request_data) {
     // Send the HTTP request to the Messenger Platform
     return new Promise((resolve, reject) => {
-      request(request_data, (err, res, body) => {
-        if (err) {
-          console.error(this.LOG, 'Unable to send message:' + err);
-          return reject(err);
-        } else {
+      request(request_data)
+        .then(success => {
           console.log(this.LOG, 'message sent!')
-          return resolve();
-        }
-      }); 
+          resolve(success);
+        }).catch(err => {
+          console.error(this.LOG, 'Unable to send message:' + err);
+          reject(err);
+        })
     });
   }
 }

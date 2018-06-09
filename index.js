@@ -12,7 +12,6 @@ const
   FbSender = require('./src/FbSender'),
   FbMessengerController = require('./src/FbMessengerController'),
   WebhookTypes = require('./src/WebhookTypes'),
-  request = require('request'),
   fs = require('fs'),
   _ = require('underscore'),
   app = express().use(bodyParser.json()); // creates express http server

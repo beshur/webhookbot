@@ -1,6 +1,6 @@
 'use strict';
 
-const request = require('request');
+const request = require('request-promise-native');
 const _ = require('underscore');
 const WebhookTypes = require('./WebhookTypes');
 
@@ -61,13 +61,10 @@ class Analytics {
         'uri': this.collectEndpoint,
         'qs': eventData,
         'method': 'POST'
-      }, (err, res, body) => {
-        if (err) {
+      }).then(resolve)
+      .catch(err => {
           console.warn(this.LOG, 'trackNewWebhook error:' + err);
           reject(err);
-          return;
-        }
-        resolve();
       });
     });
   }

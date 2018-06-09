@@ -1,6 +1,5 @@
 'use strict';
 const _ = require('underscore'),
-  request = require('request'),
   stringArgv = require('string-argv'),
   {HELP_START, HELP_UPDATE, HELP_TEXT_REQUEST, HELP_TEXT_COMMANDS} = require('./Texts');
 

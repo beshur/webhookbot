@@ -1,6 +1,5 @@
 'use strict';
 const _ = require('underscore'),
-  request = require('request'),
   stringArgv = require('string-argv'),
   AbstractCommandController = require('./AbstractCommandController'),
   WebhookType = require('./WebhookTypes').Facebook,
