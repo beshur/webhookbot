@@ -13,7 +13,6 @@ const _ = require('underscore'),
 class FbMessengerController extends AbstractCommandController {
   constructor(props) {
     super(props);
-    this.props = props;
     this.LOG = 'FbMessengerController';
     this.webhookType = WebhookType;
   }

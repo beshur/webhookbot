@@ -12,6 +12,12 @@ class AbstractCommandController {
   constructor(props) {
     this.props = props;
     this.LOG = 'AbstractCommandController';
+    this.webhookType = 'Abstract';
+
+  }
+
+  connectAnalytics(analyticsPrefab) {
+    this.props.analytics = new analyticsPrefab(this.webhookType);
   }
 
   handleMessage(senderId, message) {
@@ -140,6 +146,7 @@ class AbstractCommandController {
         "text": `Your webhooks:${hooksList}\n\nSend \`/delete <webhook id>\` as presented in the list` 
       }
       this.callSendAPI(senderId, response);
+      this.props.analytics.trackDeleteWebhook(senderId).catch();
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleDelete', senderId));
   }
   /*

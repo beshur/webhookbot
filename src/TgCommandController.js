@@ -9,7 +9,6 @@ const AbstractCommandController = require('./AbstractCommandController'),
 class TgCommandController extends AbstractCommandController {
   constructor(props) {
     super(props);
-    this.props = props;
     this.LOG = 'TgCommandController';
     this.webhookType = WebhookType;
   }

@@ -20,7 +20,7 @@ const
 const PORT = process.env.PORT || 1337;
 const LOCAL = fs.existsSync('LOCAL');
 
-const analyticsInstance = new Analytics(Config.get('WHB_GA_ID'));
+const analyticsPrefab = Analytics.bind(null, Config.get('WHB_GA_ID'));
 const firebaseInstance = new Firebase();
 const tgSenderInstance = new TgSender({
   HOST: Config.get('WHB_APP_HOST'),
@@ -28,22 +28,22 @@ const tgSenderInstance = new TgSender({
   isLocal: LOCAL
 });
 const tgComControllerInstance = new TgComController({
-  analytics: analyticsInstance,
   firebase: firebaseInstance,
   config: Config,
   sender: tgSenderInstance,
 });
+tgComControllerInstance.connectAnalytics(analyticsPrefab);
 
 const FbSenderInstance = new FbSender({
   FB_TOKEN: Config.get('WHB_FB_PAGE_ACCESS_TOKEN'),
   isLocal: LOCAL
 });
 const fbMesControllerInstance = new FbMessengerController({
-  analytics: analyticsInstance,
   firebase: firebaseInstance,
   config: Config,
   sender: FbSenderInstance,
 });
+fbMesControllerInstance.connectAnalytics(analyticsPrefab);
 
 app.get('/', (req, res) => {
   res.redirect(Config.get('WHB_INDEX_REDIRECT'));
