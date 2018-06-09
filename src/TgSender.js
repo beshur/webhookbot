@@ -22,7 +22,8 @@ class TgSender extends AbstractSender {
   setupBody(senderId, response, meta) {
     let request_body = {
       "chat_id": senderId,
-      "text": response.text
+      "text": response.text,
+      "parse_mode": "Markdown"
     }
     if (meta) {
       request_body = _.extend(request_body, meta);
