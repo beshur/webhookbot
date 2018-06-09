@@ -13,7 +13,7 @@ Config should be defined as ENV vars (because of heroku).
 
 Example to add to `.bash_profile`:
 ```
-export WHB_APP_HOST=https://webhookbot-server.herokuapp.com/
+export WHB_APP_HOST=https://wwwebhookbot.herokuapp.com/
 export WHB_FB_VERIFY_TOKEN=
 export WHB_FB_PAGE_ACCESS_TOKEN=
 export WHB_FB_APP_ID=
