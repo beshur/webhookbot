@@ -85,7 +85,7 @@ class FbSender extends AbstractSender {
     }
   }
   setupMessengerProfile() {
-    this.predefinedCallSendAPI(this.setupProfileRequest())
+    this.predefinedCallSendAPI(this.setupProfileRequest(this.profileSettings))
       .then(success => {
         console.log('setupMessengerProfile OK!')
       }).catch(err => {
