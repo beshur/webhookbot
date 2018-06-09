@@ -113,7 +113,7 @@ let firebaseApp = function() {
 
         return this.database.ref().update(updates)
           .then(success => {
-            resolve(webhookObj);
+            resolve(updates[webhooksRef + webhookId]);
           })
           .catch(reject);
       }).catch(err => {
@@ -146,15 +146,25 @@ let firebaseApp = function() {
     });
   }
 
-  this.listWebhooks = function(userId) {
+  this.listWebhooks = function(userId, webhookType) {
     console.log(this.LOG, 'listWebhooks for ', userId, typeof userId);
     return new Promise((resolve, reject) => {
       this.webhooksRef.orderByChild('userId').equalTo(userId).once('value', success => {
-        let list = success.val();
+        let list = this.filterOutOtherTypes(success.val(), webhookType);
         console.log(this.LOG, 'listWebhooks for ', userId, list);
         resolve(list)
       });
     });
+  }
+
+  this.filterOutOtherTypes = function(list, webhookType) {
+    let result = {};
+    _.each(list, (value, key) => {
+      if (value.type === webhookType) {
+        result[key] = value;
+      }
+    });
+    return result;
   }
 
   this.init();

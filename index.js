@@ -189,17 +189,13 @@ app.post('/webhook/:id', (req, res) => {
     console.log('/webhook/ hit', success, hookId);
     // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
     let handler;
-    switch(success.type) {
-      case WebhookTypes.Facebook:
-        handler = fbMesControllerInstance;
-        break;
 
-      case WebhookTypes.Telegram:
+    if (success.type === WebhookTypes.Facebook) {
+        handler = fbMesControllerInstance;
+    } else if (success.type === WebhookTypes.Telegram) {
         handler = tgComControllerInstance;
-        break;
-      default:
+    } else {
         handler = null;
-        break;
     }
 
     if (!handler) {

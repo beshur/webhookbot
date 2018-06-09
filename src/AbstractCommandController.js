@@ -109,7 +109,7 @@ class AbstractCommandController {
       return this.handleUpdateParams(senderId, id, label);
     }
     // no id
-    this.props.firebase.listWebhooks(senderId).then((list) => {
+    this.props.firebase.listWebhooks(senderId, this.webhookType).then((list) => {
       let hooksList = this.prettyHookIdsLastHitList(list);
       response = {
         "text": `Your webhooks:${hooksList}\n\nSend \`/update <Webhook id> <New label>\` to update the label` 
@@ -140,7 +140,7 @@ class AbstractCommandController {
    */
   handleDelete(senderId) {
     let response;
-    this.props.firebase.listWebhooks(senderId).then((list) => {
+    this.props.firebase.listWebhooks(senderId, this.webhookType).then((list) => {
       let hooksList = this.prettyHookIdsLastHitList(list);
       response = {
         "text": `Your webhooks:${hooksList}\n\nSend \`/delete <webhook id>\` as presented in the list` 
@@ -168,7 +168,7 @@ class AbstractCommandController {
    */
   handleList(senderId) {
     let response;
-    this.props.firebase.listWebhooks(senderId).then((list) => {
+    this.props.firebase.listWebhooks(senderId, this.webhookType).then((list) => {
       let hooksList = this.prettyHooksList(list);
       response = {
         "text": `Your webhooks:${hooksList}\n\nSend /delete to understand how to delete webhooks URLs.` 

@@ -1,5 +1,6 @@
 'use strict';
 const AbstractSender = require('./AbstractSender');
+const _ = require('underscore');
 /**
  * Facebook Messenger Sender Class
  */
