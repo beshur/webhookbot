@@ -203,11 +203,11 @@ app.post('/webhook/:id', (req, res) => {
     }
 
     if (!handler) {
-      console.error('UNKWONW WEBHOOK TYPE', success);
+      console.error('UNKWOWN WEBHOOK TYPE', success);
       res.status(500);
       return;
     }
-    
+
     handler.handleWebhookHit(hookId, success.userId, success.label, body)
       .then(success => {
         res.status(200).send('OK');
