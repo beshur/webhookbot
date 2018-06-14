@@ -28,6 +28,8 @@ export WHB_FIREBASE_messagingSenderId=
 export WHB_INDEX_REDIRECT=
 
 export WHB_TG_TOKEN=
+
+export WHB_SENTRY_TOKEN=
 ```
 
 

@@ -4,6 +4,7 @@
 const
   express = require('express'),
   bodyParser = require('body-parser'),
+  Raven = require('raven'),
   Firebase = require('./src/Firebase'),
   Analytics = require('./src/Analytics'),
   Config = require('./src/Config'),
@@ -14,10 +15,14 @@ const
   WebhookTypes = require('./src/WebhookTypes'),
   fs = require('fs'),
   _ = require('underscore'),
-  app = express().use(bodyParser.json()); // creates express http server
+  app = express();
 
 const PORT = process.env.PORT || 1337;
 const LOCAL = fs.existsSync('LOCAL');
+Raven.config(Config.get('WHB_SENTRY_TOKEN')).install();
+
+app.use(Raven.requestHandler());
+app.use(bodyParser.json());
 
 const analyticsPrefab = Analytics.bind(null, Config.get('WHB_GA_ID'));
 const firebaseInstance = new Firebase();
@@ -179,6 +184,9 @@ app.post('/webhook/:id', (req, res) => {
     });
   });
 });
+
+app.use(Raven.errorHandler());
+
 
 // Sets server port and logs message on success
 app.listen(PORT, () => console.log('webhook is listening on', PORT));
