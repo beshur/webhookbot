@@ -1,14 +1,27 @@
 'use strict';
 
-const request = require('request');
+const request = require('request-promise-native');
 const _ = require('underscore');
-const collectEndpoint = 'https://www.google-analytics.com/collect';
+const WebhookTypes = require('./WebhookTypes');
 
-function Analytics(GA_ID) {
-  this.GA_ID = GA_ID;
-  this.LOG = 'Analytics';
+class Analytics {
+  constructor(GA_ID, webhookType) {
+    this.GA_ID = GA_ID;
+    this.LOG = 'Analytics';
+    this.collectEndpoint = 'https://www.google-analytics.com/collect';
+    this.type;
+    this.typeLabel;
 
-  this.eventTpl = {
+    this.setupAnalytics(webhookType);
+  }
+
+  setupAnalytics(webhookType) {
+    this.type = webhookType;
+    this.typeLabel = _.invert(WebhookTypes)[webhookType];
+  }
+
+  get eventTpl() {
+    return {
       v: 1,
       t: 'event',
       tid: this.GA_ID,
@@ -16,47 +29,42 @@ function Analytics(GA_ID) {
       ec: 'webhook',
       ea: ''
     }
-
-  this.trackNewWebhook = (userId) => {
-    const event = _.defaults({
-      cid: userId,
-      ea: 'created'
-    }, this.eventTpl);
-
-    return this.collect(event);
   }
 
-  this.trackUpdateWebhook = (userId) => {
-    const event = _.defaults({
+  getEventObj(eventAction, userId) {
+    return _.defaults({
       cid: userId,
-      ea: 'updated'
+      ea: eventAction,
+      el: this.typeLabel
     }, this.eventTpl);
+  };
 
-    return this.collect(event);
+  trackNewWebhook(userId) {
+    return this.collect(this.getEventObj('created', userId));
   }
 
-  this.trackWebhookHit = (userId) => {
-    const event = _.defaults({
-      cid: userId,
-      ea: 'hit'
-    }, this.eventTpl);
-
-    return this.collect(event);
+  trackUpdateWebhook(userId) {
+    return this.collect(this.getEventObj('updated', userId));
   }
 
-  this.collect = function(eventData) {
+  trackDeleteWebhook(userId) {
+    return this.collect(this.getEventObj('deleted', userId));
+  }
+
+  trackWebhookHit(userId) {
+    return this.collect(this.getEventObj('hit', userId));
+  }
+
+  collect(eventData) {
     return new Promise((resolve, reject) => {
       request({
-        'uri': collectEndpoint,
+        'uri': this.collectEndpoint,
         'qs': eventData,
         'method': 'POST'
-      }, (err, res, body) => {
-        if (err) {
+      }).then(resolve)
+      .catch(err => {
           console.warn(this.LOG, 'trackNewWebhook error:' + err);
           reject(err);
-          return;
-        }
-        resolve();
       });
     });
   }

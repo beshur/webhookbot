@@ -4,26 +4,50 @@
 const
   express = require('express'),
   bodyParser = require('body-parser'),
+  Raven = require('raven'),
   Firebase = require('./src/Firebase'),
   Analytics = require('./src/Analytics'),
   Config = require('./src/Config'),
+  TgSender = require('./src/TgSender'),
+  TgComController = require('./src/TgCommandController'),
+  FbSender = require('./src/FbSender'),
   FbMessengerController = require('./src/FbMessengerController'),
-  request = require('request'),
+  WebhookTypes = require('./src/WebhookTypes'),
   fs = require('fs'),
   _ = require('underscore'),
-  app = express().use(bodyParser.json()); // creates express http server
+  app = express();
 
 const PORT = process.env.PORT || 1337;
 const LOCAL = fs.existsSync('LOCAL');
+Raven.config(Config.get('WHB_SENTRY_TOKEN')).install();
 
-const analyticsInstance = new Analytics(Config.get('WHB_GA_ID'));
+app.use(Raven.requestHandler());
+app.use(bodyParser.json());
+
+const analyticsPrefab = Analytics.bind(null, Config.get('WHB_GA_ID'));
 const firebaseInstance = new Firebase();
-const fbMesControllerInstance = new FbMessengerController({
-  analytics: analyticsInstance,
-  firebase: firebaseInstance,
-  config: Config,
+const tgSenderInstance = new TgSender({
+  HOST: Config.get('WHB_APP_HOST'),
+  TG_TOKEN: Config.get('WHB_TG_TOKEN'),
   isLocal: LOCAL
 });
+const tgComControllerInstance = new TgComController({
+  firebase: firebaseInstance,
+  config: Config,
+  sender: tgSenderInstance,
+});
+tgComControllerInstance.connectAnalytics(analyticsPrefab);
+
+const FbSenderInstance = new FbSender({
+  FB_TOKEN: Config.get('WHB_FB_PAGE_ACCESS_TOKEN'),
+  isLocal: LOCAL
+});
+const fbMesControllerInstance = new FbMessengerController({
+  firebase: firebaseInstance,
+  config: Config,
+  sender: FbSenderInstance,
+});
+fbMesControllerInstance.connectAnalytics(analyticsPrefab);
 
 app.get('/', (req, res) => {
   res.redirect(Config.get('WHB_INDEX_REDIRECT'));
@@ -98,6 +122,26 @@ app.post('/webhook', (req, res) => {
 
 });
 
+// Creates the endpoint for our Telegram webhook 
+app.post('/tg/:token', (req, res) => {  
+ 
+  let body = req.body;
+  let token = req.params.token;
+  if (token !== Config.get('WHB_TG_TOKEN')) {
+    console.warn('TG incoming WRONG TOKEN', token);
+    return res.status(403).send('WRONG TOKEN');
+  }
+
+  console.log('TG incoming:', body);
+  let type = 'message';
+  if (body[type]) {
+    tgComControllerInstance.handleMessage(body[type].chat.id, body[type]);
+  }
+
+  res.send('EVENT_RECEIVED');
+
+});
+
 // Creates the endpoint for client webhook 
 app.post('/webhook/:id', (req, res) => {  
  
@@ -110,8 +154,23 @@ app.post('/webhook/:id', (req, res) => {
   firebaseInstance.webhookHit(hookId).then((success) => {
     console.log('/webhook/ hit', success, hookId);
     // console.log("/webhook/ valid hookId %s clientId %s", hookId, clientId);
+    let handler;
 
-    fbMesControllerInstance.handleWebhookHit(hookId, success.userId, success.label, body)
+    if (success.type === WebhookTypes.Facebook) {
+        handler = fbMesControllerInstance;
+    } else if (success.type === WebhookTypes.Telegram) {
+        handler = tgComControllerInstance;
+    } else {
+        handler = null;
+    }
+
+    if (!handler) {
+      console.error('UNKWOWN WEBHOOK TYPE', success);
+      res.status(500);
+      return;
+    }
+
+    handler.handleWebhookHit(hookId, success.userId, success.label, body)
       .then(success => {
         res.status(200).send('OK');
       }).catch(error => {
@@ -125,6 +184,9 @@ app.post('/webhook/:id', (req, res) => {
     });
   });
 });
+
+app.use(Raven.errorHandler());
+
 
 // Sets server port and logs message on success
 app.listen(PORT, () => console.log('webhook is listening on', PORT));

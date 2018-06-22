@@ -2,12 +2,14 @@
 const firebase = require('firebase');
 const _ = require('underscore');
 const Config = require('./Config');
+const WebhookTypes = require('./WebhookTypes');
 
 const webhookSchema = {
   'label': '',
   'userId': '',
   'createdOn': '',
-  'lastHitOn': ''
+  'lastHitOn': '',
+  'type': WebhookTypes.Facebook
 }
 
 const webhooksRef = 'webhooks/';
@@ -46,16 +48,17 @@ let firebaseApp = function() {
     console.log(this.LOG, 'handleData', this.webhooks);
   }
 
-  this.generateNewWebhook = function(userId, label) {
+  this.generateNewWebhook = function(userId, label, type) {
     return _.defaults({
       userId: userId,
       label: label,
+      type: type,
       createdOn: Date.now()
     }, webhookSchema);
   }
 
-  this.createWebhook = (userId, label) => {
-    return this.webhooksRef.push(this.generateNewWebhook(userId, label));
+  this.createWebhook = (userId, label, type) => {
+    return this.webhooksRef.push(this.generateNewWebhook(userId, label, type));
   }
 
   this.toUpdate = (senderId, webhookId) => {
@@ -110,7 +113,7 @@ let firebaseApp = function() {
 
         return this.database.ref().update(updates)
           .then(success => {
-            resolve(webhookObj);
+            resolve(updates[webhooksRef + webhookId]);
           })
           .catch(reject);
       }).catch(err => {
@@ -143,15 +146,25 @@ let firebaseApp = function() {
     });
   }
 
-  this.listWebhooks = function(userId) {
+  this.listWebhooks = function(userId, webhookType) {
     console.log(this.LOG, 'listWebhooks for ', userId, typeof userId);
     return new Promise((resolve, reject) => {
       this.webhooksRef.orderByChild('userId').equalTo(userId).once('value', success => {
-        let list = success.val();
+        let list = this.filterOutOtherTypes(success.val(), webhookType);
         console.log(this.LOG, 'listWebhooks for ', userId, list);
         resolve(list)
       });
     });
+  }
+
+  this.filterOutOtherTypes = function(list, webhookType) {
+    let result = {};
+    _.each(list, (value, key) => {
+      if (value.type === webhookType) {
+        result[key] = value;
+      }
+    });
+    return result;
   }
 
   this.init();
