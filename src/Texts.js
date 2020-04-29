@@ -8,7 +8,12 @@ Send \`/update <Webhook Id> <New label>\`
 To get webhook id, send \`/list\``;
 TEXTS.HELP_TEXT_REQUEST = `On your webhook URL:
 Send POST <Content-Type: application/json> with the data structured like this:
-\`{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}\``;
+\`{ "title": "<Your title (optional)>", "text": "<Your Text (optional)>"}\`
+
+Send POST <Content-Type: text/plain> with the raw data of your message to your url /txt
+\`curl --location --request POST '<URL>/txt' \
+--header 'Content-Type: text/plain' \
+--data-raw '"test"'\``;
 TEXTS.HELP_TEXT_COMMANDS = `Commands:\n
 \`/start\`
 to prepare for creating new webhook URLs;

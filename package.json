@@ -18,13 +18,11 @@
     "body-parser": "^1.18.3",
     "express": "^4.16.3",
     "firebase": "^5.0.2",
-    "javascript-state-machine": "^3.0.1",
     "nconf": "^0.10.0",
     "raven": "^2.6.2",
     "request": "^2.85.0",
     "request-promise-native": "^1.0.5",
     "string-argv": "0.0.2",
-    "underscore": "^1.9.0",
-    "uuid": "^3.2.1"
+    "underscore": "^1.9.0"
   }
 }

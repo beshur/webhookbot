@@ -73,7 +73,7 @@ class AbstractCommandController {
    */
   handleStart(senderId, message) {
     this.callSendAPI(senderId, {
-      "text": HELP_START 
+      "text": HELP_START
     });
   }
 
@@ -86,7 +86,7 @@ class AbstractCommandController {
     this.props.firebase.createWebhook(senderId, label, this.webhookType).then((success) => {
       let clientHookUrl = this.createWebhookUrl(success.key);
       let response = {
-        "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}` 
+        "text": `Send your requests here:\n${clientHookUrl}\n\n${HELP_TEXT_REQUEST}`
       }
       this.callSendAPI(senderId, response);
       this.props.analytics.trackNewWebhook(senderId).catch();
@@ -109,7 +109,7 @@ class AbstractCommandController {
     this.props.firebase.listWebhooks(senderId, this.webhookType).then((list) => {
       let hooksList = this.prettyHookIdsLastHitList(list);
       let response = {
-        "text": `Your webhooks:${hooksList}\n\nSend \`/update <Webhook id> <New label>\` to update the label` 
+        "text": `Your webhooks:${hooksList}\n\nSend \`/update <Webhook id> <New label>\` to update the label`
       }
       this.callSendAPI(senderId, response);
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleUpdate', senderId));
@@ -141,7 +141,7 @@ class AbstractCommandController {
     this.props.firebase.listWebhooks(senderId, this.webhookType).then((list) => {
       let hooksList = this.prettyHookIdsLastHitList(list);
       let response = {
-        "text": `Your webhooks:${hooksList}\n\nSend \`/delete <webhook id>\` as presented in the list` 
+        "text": `Your webhooks:${hooksList}\n\nSend \`/delete <webhook id>\` as presented in the list`
       }
       this.callSendAPI(senderId, response);
       this.props.analytics.trackDeleteWebhook(senderId).catch();
@@ -155,7 +155,7 @@ class AbstractCommandController {
   handleDeleteWithId(senderId, id) {
     this.props.firebase.deleteWebhook(id, senderId).then((success) => {
       let response = {
-        "text": `Successfully deleted ${id}` 
+        "text": `Successfully deleted ${id}`
       }
       this.callSendAPI(senderId, response);
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleDeleteWithId', senderId));
@@ -168,7 +168,7 @@ class AbstractCommandController {
     this.props.firebase.listWebhooks(senderId, this.webhookType).then((list) => {
       let hooksList = this.prettyHooksList(list);
       let response = {
-        "text": `Your webhooks:${hooksList}\n\nSend /delete to understand how to delete webhooks URLs.` 
+        "text": `Your webhooks:${hooksList}\n\nSend /delete to understand how to delete webhooks URLs.`
       }
       this.callSendAPI(senderId, response);
     }).catch(this._defaultFirebaseCatch.bind(this, 'handleList', senderId));
@@ -224,11 +224,16 @@ class AbstractCommandController {
     if (!text) {
       text = this.prettyHookLabel(hookId);
     }
-    if (body.title) {
-      text += `*${body.title}*\n`;
-    }
-    if (body.text) {
-      text += body.text;
+
+    if (typeof body === 'string') {
+      text += body;
+    } else {
+      if (body.title) {
+        text += `*${body.title}*\n`;
+      }
+      if (body.text) {
+        text += body.text;
+      }
     }
     return {text};
   }
