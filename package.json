@@ -1,6 +1,6 @@
 {
   "name": "webhookbot-server",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Runs a webhook commands processor, with adapters for some messengers",
   "main": "index.js",
   "scripts": {
