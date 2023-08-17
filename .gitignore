@@ -2,3 +2,4 @@ node_modules
 sftp-config.json
 LOCAL
 package-lock.json
+.env.sh
