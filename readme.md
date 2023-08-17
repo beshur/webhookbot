@@ -4,10 +4,11 @@ Runs a webhook commands processor.
 
 Currently the bot is up in:
 - [Telegram](https://t.me/wwwebhook_bot) - give it a try!
-- [Facebook Messenger](https://m.me/webhookbot) not approved, so you cannot use it.
+- ~~Facebook Messenger not approved, so you cannot use it.~~
 
+More instructions inside the bot.
 
-## Config 
+## Config
 
 Config should be defined as ENV vars (because of heroku).
 
